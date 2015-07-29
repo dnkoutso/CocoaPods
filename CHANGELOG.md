@@ -12,6 +12,11 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
   [Boris Bügling](https://github.com/neonichu)
   [#3920](https://github.com/CocoaPods/CocoaPods/pull/3920)
 
+##### Enhancements
+
+* Add --sources to `repo` command.
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#3912](https://github.com/CocoaPods/CocoaPods/issues/3912)
 
 ## 0.38.2
 
