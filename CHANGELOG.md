@@ -8,6 +8,10 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
 
 ##### Enhancements
 
+* Aggregate targets should not include pod targets only used by tests  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#6726](https://github.com/CocoaPods/CocoaPods/pull/6726)
+
 * Add support for test target creation in the pods project generator  
   [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
   [#6703](https://github.com/CocoaPods/CocoaPods/pull/6703) 
