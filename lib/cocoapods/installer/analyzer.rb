@@ -367,6 +367,7 @@ module Pod
       #
       def generate_targets
         specs_by_target = result.specs_by_target.reject { |td, _| td.abstract? }
+        check_no_test_specs_with_targets(specs_by_target)
         pod_targets = generate_pod_targets(specs_by_target)
         aggregate_targets = specs_by_target.keys.map do |target_definition|
           generate_target(target_definition, pod_targets)
@@ -435,6 +436,25 @@ module Pod
         end
 
         target
+      end
+
+      # Verify that there are no test specs part of any target definition.
+      #
+      # @param  [Hash{Podfile::TargetDefinition => Array<Specification>}] specs_by_target
+      #         the resolved specifications grouped by target.
+      #
+      # @note raises Informative if targets using a pod that is a test spec pod.
+      #
+      def check_no_test_specs_with_targets(specs_by_target)
+        error_messages = specs_by_target.map do |target, specs|
+          test_specs = specs.select(&:test_specification?)
+          next if test_specs.empty?
+          "#{target.name} contains #{test_specs.map(&:name).join(', ')}"
+        end.compact
+
+        unless error_messages.empty?
+          raise Informative, "Test specifications cannot be integrated with targets:\n\n#{error_messages.join("\n")}"
+        end
       end
 
       # Returns true if a pod target is only used by other pod targets as a test dependency and therefore should
