@@ -365,6 +365,33 @@ module Pod
       "${PODS_ROOT}/#{sandbox.pod_dir(pod_name).relative_path_from(sandbox.root)}"
     end
 
+    # @param [Boolean] include_private_headers
+    #         whether to include the private header search paths
+    #
+    # @param [Boolean] include_test_dependent_targets
+    #        whether to include header search paths for test dependent targets
+    #
+    # @param [Array<String>] header_search_paths
+    #        the initial array of header search paths to use
+    #
+    # # @param [Set<String>] seen_targets
+    #        the set of targets in which header search paths have already been calculated
+    #
+    # @return [Array<String>] The set of header search paths this target uses.
+    #
+    def recursive_target_header_search_paths(include_private_headers = true, include_test_dependent_targets = false, header_search_paths = [], seen_targets = Set.new)
+      return header_search_paths if seen_targets.include?(name)
+      seen_targets << name
+      header_search_paths.concat(build_headers.search_paths(platform)) if include_private_headers
+      header_search_paths.concat(sandbox.public_headers.search_paths(platform, self))
+      targets = dependent_targets
+      targets += test_dependent_targets if include_test_dependent_targets
+      targets.each do |dependent_target|
+        dependent_target.recursive_target_header_search_paths(false, include_test_dependent_targets, header_search_paths, seen_targets)
+      end
+      header_search_paths.uniq
+    end
+
     private
 
     # @param  [TargetDefinition] target_definition
