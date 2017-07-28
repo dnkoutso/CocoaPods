@@ -436,8 +436,6 @@ module Pod
           next true if explicitly_defined_in_target_definition
           !pod_target_test_only?(pod_target, pod_targets)
         end
-
-        target
       end
 
       # Returns true if a pod target is only used by other pod targets as a test dependency and therefore should
@@ -453,13 +451,13 @@ module Pod
       #
       def pod_target_test_only?(pod_target, pod_targets)
         name = pod_target.name
-        key = @test_pod_target_key.new(name, pod_targets)
-        if @test_pod_target_analyzer_cache.key?(key)
-          return @test_pod_target_analyzer_cache[key]
-        end
+        # key = @test_pod_target_key.new(name, pod_targets)
+        # if @test_pod_target_analyzer_cache.key?(key)
+        #   return @test_pod_target_analyzer_cache[key]
+        # end
         source = pod_targets.any? { |pt| pt.dependent_targets.map(&:name).include?(name) }
         test = pod_targets.any? { |pt| pt.test_dependent_targets.map(&:name).include?(name) }
-        @test_pod_target_analyzer_cache[key] = !source && test
+        !source && test
       end
 
       # Setup the pod targets for an aggregate target. Deduplicates resulting

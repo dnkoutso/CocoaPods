@@ -685,6 +685,36 @@ module Pod
         @analyzer.send(:pod_target_test_only?, pod_target_four, all_pod_targets).should.be.false
       end
 
+      it 'handles test only pod targets with subspecs' do
+        pod_target_one = stub(:name => 'Pod1', :dependent_targets => [])
+        pod_target_one.stubs(:test_dependent_targets => [pod_target_one])
+        all_pod_targets = [pod_target_one]
+        @analyzer.send(:pod_target_test_only?, pod_target_one, all_pod_targets).should.be.true
+      end
+
+      it 'includes pod target when declared in the target definition' do
+        target_definition = stub(:non_inherited_dependencies => [])
+        pod_target = stub(:name => 'Pod1', :dependent_targets => [], :test_dependent_targets => [], :target_definitions => [target_definition])
+        all_pod_targets = [pod_target]
+        @analyzer.send(:filter_test_only_pod_targets, all_pod_targets).should == [pod_target]
+      end
+
+      it 'does not include pod target if declared within pod target definition and is a test only target' do
+        target_definition = stub(:non_inherited_dependencies => [])
+        pod_target = stub(:name => 'Pod1', :dependent_targets => [], :test_dependent_targets => [], :target_definitions => [])
+        all_pod_targets = [pod_target]
+        @analyzer.stubs(:pod_target_test_only?).with(pod_target, all_pod_targets).returns(true)
+        @analyzer.send(:filter_test_only_pod_targets, all_pod_targets).should.be.empty
+      end
+
+      it 'does not include pod target if not declared within pod target definition and its test only' do
+        target_definition = stub(:non_inherited_dependencies => [])
+        pod_target = stub(:name => 'Pod1', :dependent_targets => [], :test_dependent_targets => [], :target_definitions => [])
+        all_pod_targets = [pod_target]
+        @analyzer.stubs(:pod_target_test_only?).with(pod_target, all_pod_targets).returns(true)
+        @analyzer.send(:filter_test_only_pod_targets, all_pod_targets).should.be.empty
+      end
+
       #-------------------------------------------------------------------------#
 
       describe 'extension targets' do
