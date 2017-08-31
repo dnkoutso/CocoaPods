@@ -11,6 +11,11 @@ module Pod
         #
         attr_accessor :platform
 
+        # @return [Bool] whether this variant is used by tests only
+        #
+        attr_accessor :used_by_tests_only
+        alias_method :used_by_tests_only?, :used_by_tests_only
+
         # @return [Bool] whether this pod should be built as framework
         #
         attr_accessor :requires_frameworks
@@ -26,11 +31,13 @@ module Pod
         #
         # @param [Array<String>] specs       @see #specs
         # @param [Platform] platform         @see #platform
+        # @param [Bool] used_by_tests_only   @see #used_by_tests_only?
         # @param [Bool] requires_frameworks  @see #requires_frameworks?
         #
-        def initialize(specs, platform, requires_frameworks = false)
+        def initialize(specs, platform, used_by_tests_only = false, requires_frameworks = false)
           self.specs = specs
           self.platform = platform
+          self.used_by_tests_only = used_by_tests_only
           self.requires_frameworks = requires_frameworks
         end
 
@@ -41,6 +48,7 @@ module Pod
           self.class == other.class &&
             specs == other.specs &&
             platform == other.platform &&
+            used_by_tests_only == other.used_by_tests_only &&
             requires_frameworks == other.requires_frameworks
         end
         alias_method :eql?, :==
@@ -51,7 +59,7 @@ module Pod
         #
         # @!visibility private
         def hash
-          [specs, platform, requires_frameworks].hash
+          [specs, platform, used_by_tests_only, requires_frameworks].hash
         end
       end
     end

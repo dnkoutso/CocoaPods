@@ -17,7 +17,7 @@ module Pod
         end
 
         it 'can be initialized with specs, platform and whether it requires frameworks' do
-          variant = PodVariant.new(@specs, @platform, true)
+          variant = PodVariant.new(@specs, @platform, false, true)
           variant.specs.should == @specs
           variant.platform.should == @platform
           variant.requires_frameworks.should == true
@@ -30,17 +30,17 @@ module Pod
         end
 
         it 'can be compared for equality with another variant with the same specs, platform, and whether it requires frameworks' do
-          spec = PodVariant.new(@specs, @platform, false)
-          spec.should == PodVariant.new(@specs, @platform, false)
+          spec = PodVariant.new(@specs, @platform, false, false)
+          spec.should == PodVariant.new(@specs, @platform, false, false)
           spec.should.not == PodVariant.new([@specs.first], @platform)
-          spec.should.not == PodVariant.new(@specs, Platform.osx, false)
-          spec.should.not == PodVariant.new(@specs, @platform, true)
+          spec.should.not == PodVariant.new(@specs, Platform.osx, false, false)
+          spec.should.not == PodVariant.new(@specs, @platform, false, true)
         end
 
         it 'can be used as hash keys' do
-          k0 = PodVariant.new(@specs, @platform, false)
+          k0 = PodVariant.new(@specs, @platform, false, false)
           v0 = stub('Value at index 0')
-          k1 = PodVariant.new(@specs, @platform, true)
+          k1 = PodVariant.new(@specs, @platform, false, true)
           v1 = stub('Value at index 1')
           hash = { k0 => v0, k1 => v1 }
           hash[k0].should == v0
