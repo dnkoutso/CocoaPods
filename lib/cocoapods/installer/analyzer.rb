@@ -75,11 +75,15 @@ module Pod
         store_existing_checkout_options
         fetch_external_sources if allow_fetches
 
-        @locked_dependencies    = generate_version_locking_dependencies
-        @result.specs_by_target = validate_platforms(resolve_dependencies)
-        @result.specifications  = generate_specifications
-        @result.targets         = generate_targets
+        @locked_dependencies = generate_version_locking_dependencies
+        resolved_specs_by_target = resolve_dependencies
+        validate_platforms(resolved_specs_by_target)
+        @result.specifications  = generate_specifications(resolved_specs_by_target)
+        @result.targets         = generate_targets(resolved_specs_by_target)
         @result.sandbox_state   = generate_sandbox_state
+        @result.specs_by_target = resolved_specs_by_target.each_with_object({}) do |specs_by_target, hash|
+          hash[specs_by_target[0]] = specs_by_target[1].map(&:spec)
+        end
         @result
       end
 
@@ -367,8 +371,8 @@ module Pod
       #
       # @return [Array<AggregateTarget>]
       #
-      def generate_targets
-        specs_by_target = result.specs_by_target.reject { |td, _| td.abstract? }
+      def generate_targets(specs_by_target)
+        specs_by_target = specs_by_target.reject { |td, _| td.abstract? }
         pod_targets = generate_pod_targets(specs_by_target)
         aggregate_targets = specs_by_target.keys.map do |target_definition|
           generate_target(target_definition, pod_targets)
@@ -429,7 +433,7 @@ module Pod
           end
         end
 
-        target.pod_targets = filter_pod_targets_for_target_definition(pod_targets, target_definition)
+        target.pod_targets = filter_pod_targets_for_target_definition(target_definition, pod_targets)
 
         target
       end
@@ -437,51 +441,25 @@ module Pod
       # Returns a filtered list of pod targets that should or should not be part of the target definition. Pod targets
       # used by tests only are filtered.
       #
-      # @param [Array<PodTarget>] pod_targets
-      #        the array of pod targets to check against
-      #
       # @param [TargetDefinition] target_definition
       #        the target definition to use as the base for filtering
       #
-      # @return [Array<PodTarget>] the filtered list of pod targets.
-      #
-      def filter_pod_targets_for_target_definition(pod_targets, target_definition)
-        pod_targets.select do |pod_target|
-          pod_target.target_definitions.include?(target_definition) && !pod_target_test_only?(pod_target, pod_targets)
-        end
-      end
-
-      # Returns true if a pod target is only used by other pod targets as a test dependency and therefore should
-      # not be included as part of the aggregate target.
-      #
-      # @param [PodTarget] pod_target
-      #        the pod target being queried
-      #
       # @param [Array<PodTarget>] pod_targets
       #        the array of pod targets to check against
       #
-      # @return [Boolean] if the pod target is only referenced from test dependencies.
+      # @return [Array<PodTarget>] the filtered list of pod targets.
       #
-      def pod_target_test_only?(pod_target, pod_targets)
-        name = pod_target.name
-        key = @test_pod_target_key.new(name, pod_targets)
-        if @test_pod_target_analyzer_cache.key?(key)
-          return @test_pod_target_analyzer_cache[key]
+      def filter_pod_targets_for_target_definition(target_definition, pod_targets)
+        pod_targets.select do |pod_target|
+          pod_target.target_definitions.include?(target_definition) && !pod_target.used_by_tests_only?
         end
-        source = pod_targets.any? do |pt|
-          pt.dependent_targets.map(&:name).include?(name)
-        end
-        test = pod_targets.any? do |pt|
-          pt.test_dependent_targets.reject { |dpt| dpt.name == pt.name }.map(&:name).include?(name)
-        end
-        @test_pod_target_analyzer_cache[key] = !source && test
       end
 
       # Setup the pod targets for an aggregate target. Deduplicates resulting
       # targets by grouping by platform and subspec by their root
       # to create a {PodTarget} for each spec.
       #
-      # @param  [Hash{Podfile::TargetDefinition => Array<Specification>}] specs_by_target
+      # @param  [Hash{Podfile::TargetDefinition => Array<ResolvedSpecification>}] specs_by_target
       #         the resolved specifications grouped by target.
       #
       # @return [Array<PodTarget>]
@@ -491,7 +469,7 @@ module Pod
           distinct_targets = specs_by_target.each_with_object({}) do |dependency, hash|
             target_definition, dependent_specs = *dependency
             dependent_specs.group_by(&:root).each do |root_spec, specs|
-              pod_variant = PodVariant.new(specs, target_definition.platform, target_definition.uses_frameworks?)
+              pod_variant = PodVariant.new(specs.map(&:spec), target_definition.platform, specs.all?(&:used_by_tests_only?), target_definition.uses_frameworks?)
               hash[root_spec] ||= {}
               (hash[root_spec][pod_variant] ||= []) << target_definition
             end
@@ -500,11 +478,11 @@ module Pod
           pod_targets = distinct_targets.flat_map do |_root, target_definitions_by_variant|
             suffixes = PodVariantSet.new(target_definitions_by_variant.keys).scope_suffixes
             target_definitions_by_variant.flat_map do |variant, target_definitions|
-              generate_pod_target(target_definitions, variant.specs, :scope_suffix => suffixes[variant])
+              generate_pod_target(target_definitions, variant.specs, variant.used_by_tests_only?, :scope_suffix => suffixes[variant])
             end
           end
 
-          all_specs = specs_by_target.values.flatten.uniq
+          all_specs = specs_by_target.values.flatten.map(&:spec).uniq
           pod_targets_by_name = pod_targets.group_by(&:pod_name).each_with_object({}) do |(name, values), hash|
             # Sort the target by the number of activated subspecs, so that
             # we prefer a minimal target as transitive dependency.
@@ -522,12 +500,12 @@ module Pod
           specs_by_target.flat_map do |target_definition, specs|
             grouped_specs = specs.group_by(&:root).values.uniq
             pod_targets = grouped_specs.flat_map do |pod_specs|
-              generate_pod_target([target_definition], pod_specs).scoped(dedupe_cache)
+              generate_pod_target([target_definition], pod_specs.map(&:spec), pod_specs.all?(&:used_by_tests_only?)).scoped(dedupe_cache)
             end
 
             pod_targets.each do |target|
-              dependencies = transitive_dependencies_for_specs(target.specs, target.platform, specs).group_by(&:root)
-              test_dependencies = transitive_dependencies_for_specs(target.specs.select(&:test_specification?), target.platform, all_specs).group_by(&:root)
+              dependencies = transitive_dependencies_for_specs(target.specs.reject(&:test_specification?), target.platform, specs.map(&:spec)).group_by(&:root)
+              test_dependencies = transitive_dependencies_for_specs(target.specs.select(&:test_specification?), target.platform, specs.map(&:spec)).group_by(&:root)
               test_dependencies.delete_if { |k| dependencies.key? k }
               target.dependent_targets = pod_targets.reject { |t| dependencies[t.root_spec].nil? }
               target.test_dependent_targets = pod_targets.reject { |t| test_dependencies[t.root_spec].nil? }
@@ -585,13 +563,16 @@ module Pod
       # @param  [Array<Specification>] pod_specs
       #         the specifications of an equal root.
       #
+      # @param  [Bool] used_by_tests_only
+      #         @see PodTarget#used_by_tests_only?
+      #
       # @param  [String] scope_suffix
       #         @see PodTarget#scope_suffix
       #
       # @return [PodTarget]
       #
-      def generate_pod_target(target_definitions, pod_specs, scope_suffix: nil)
-        pod_target = PodTarget.new(pod_specs, target_definitions, sandbox, scope_suffix)
+      def generate_pod_target(target_definitions, pod_specs, used_by_tests_only, scope_suffix: nil)
+        pod_target = PodTarget.new(pod_specs, target_definitions, sandbox, used_by_tests_only, scope_suffix)
         pod_target.host_requires_frameworks = target_definitions.any?(&:uses_frameworks?)
 
         if installation_options.integrate_targets?
@@ -769,14 +750,14 @@ module Pod
           resolver = Resolver.new(sandbox, podfile, locked_dependencies, sources)
           resolver.specs_updated = specs_updated?
           specs_by_target = resolver.resolve
-          specs_by_target.values.flatten(1).each(&:validate_cocoapods_version)
+          specs_by_target.values.flatten(1).map(&:spec).each(&:validate_cocoapods_version)
         end
         specs_by_target
       end
 
       # Warns for any specification that is incompatible with its target.
       #
-      # @param  [Hash{TargetDefinition => Array<Spec>}] specs_by_target
+      # @param  [Hash{TargetDefinition => Array<Spec>}] resolved_specs_by_target
       #         the specifications grouped by target.
       #
       # @return [Hash{TargetDefinition => Array<Spec>}] the specifications
@@ -784,7 +765,7 @@ module Pod
       #
       def validate_platforms(specs_by_target)
         specs_by_target.each do |target, specs|
-          specs.each do |spec|
+          specs.map(&:spec).each do |spec|
             next unless target_platform = target.platform
             unless spec.available_platforms.any? { |p| target_platform.supports?(p) }
               UI.warn "The platform of the target `#{target.name}` "     \
@@ -795,12 +776,12 @@ module Pod
         end
       end
 
-      # Returns the list of all the resolved the resolved specifications.
+      # Returns the list of all the resolved specifications.
       #
       # @return [Array<Specification>] the list of the specifications.
       #
-      def generate_specifications
-        result.specs_by_target.values.flatten.uniq
+      def generate_specifications(specs_by_target)
+        specs_by_target.values.flatten.map(&:spec).uniq
       end
 
       # Computes the state of the sandbox respect to the resolved

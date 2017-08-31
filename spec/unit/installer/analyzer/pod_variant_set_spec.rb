@@ -20,8 +20,8 @@ module Pod
 
       it 'returns scopes by built types if they qualify' do
         variants = PodVariantSet.new([
-          PodVariant.new([@root_spec], Platform.ios, true),
-          PodVariant.new([@root_spec], Platform.ios, false),
+          PodVariant.new([@root_spec], Platform.ios, false, true),
+          PodVariant.new([@root_spec], Platform.ios, false, false),
         ])
         variants.scope_suffixes.values.should == %w(framework library)
       end
@@ -139,8 +139,8 @@ module Pod
         variants = PodVariantSet.new([
           PodVariant.new([@root_spec, @default_subspec], Platform.new(:ios, '7.0')),
           PodVariant.new([@root_spec, @default_subspec], Platform.ios),
-          PodVariant.new([@root_spec, @default_subspec], Platform.osx, true),
-          PodVariant.new([@root_spec, @default_subspec, @foo_subspec], Platform.osx, true),
+          PodVariant.new([@root_spec, @default_subspec], Platform.osx, false, true),
+          PodVariant.new([@root_spec, @default_subspec, @foo_subspec], Platform.osx, false, true),
         ])
         variants.scope_suffixes.values.should == %w(
           library-iOS7.0

@@ -16,6 +16,11 @@ module Pod
     #
     attr_reader :build_headers
 
+    # @return [Bool] whether this variant is used by tests only
+    #
+    attr_accessor :used_by_tests_only
+    alias used_by_tests_only? used_by_tests_only
+
     # @return [String] used as suffix in the label
     #
     # @note This affects the value returned by #configuration_build_dir
@@ -43,7 +48,7 @@ module Pod
     # @param [Sandbox] sandbox @see #sandbox
     # @param [String] scope_suffix @see #scope_suffix
     #
-    def initialize(specs, target_definitions, sandbox, scope_suffix = nil)
+    def initialize(specs, target_definitions, sandbox, used_by_tests_only = false, scope_suffix = nil)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions" if target_definitions.all?(&:abstract?)
@@ -52,6 +57,7 @@ module Pod
       @specs = specs
       @target_definitions = target_definitions
       @sandbox = sandbox
+      @used_by_tests_only = used_by_tests_only
       @scope_suffix = scope_suffix
       @build_headers  = Sandbox::HeadersStore.new(sandbox, 'Private')
       @file_accessors = []
@@ -73,7 +79,7 @@ module Pod
         if cache[cache_key]
           cache[cache_key]
         else
-          target = PodTarget.new(specs, [target_definition], sandbox, target_definition.label)
+          target = PodTarget.new(specs, [target_definition], sandbox, used_by_tests_only, target_definition.label)
           target.file_accessors = file_accessors
           target.user_build_configurations = user_build_configurations
           target.native_target = native_target
