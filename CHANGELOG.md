@@ -35,6 +35,10 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
   [Justin Martin](https://github.com/justinseanmartin)
   [#6994](https://github.com/CocoaPods/CocoaPods/pull/6994)
 
+* Exclude test resources and vendored frameworks into aggregate targets  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#7000](https://github.com/CocoaPods/CocoaPods/pull/7000)
+
 * Wrap platform warning message with quotes  
   [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
   [#6968](https://github.com/CocoaPods/CocoaPods/pull/6968)
