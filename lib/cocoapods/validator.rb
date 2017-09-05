@@ -314,12 +314,12 @@ module Pod
         @consumer = spec.consumer(platform)
         setup_validation_environment
         begin
-          create_app_project
+          app_project_generator = create_app_project
           download_pod
           check_file_patterns
           install_pod
           validate_dot_swift_version
-          add_app_project_import
+          add_app_project_import(app_project_generator)
           validate_vendored_dynamic_frameworks
           build_pod
           test_pod unless skip_tests
@@ -438,70 +438,21 @@ module Pod
     end
 
     def create_app_project
-      app_project = Xcodeproj::Project.new(validation_dir + 'App.xcodeproj')
-      app_project.new_target(:application, 'App', consumer.platform_name, deployment_target)
-      app_project.save
-      app_project.recreate_user_schemes
+      app_project_generator = Pod::AppProjectGenerator.new(validation_dir)
+      app_project_generator.create_app_project(consumer.platform_name, deployment_target)
+      app_project_generator.save
+      app_project_generator.recreate_user_schemes
+      app_project_generator
     end
 
-    def add_app_project_import
-      app_project = Xcodeproj::Project.open(validation_dir + 'App.xcodeproj')
+    def add_app_project_import(app_project_generator)
       pod_target = @installer.pod_targets.find { |pt| pt.pod_name == spec.root.name }
-
-      source_file = write_app_import_source_file(pod_target)
-      source_file_ref = app_project.new_group('App', 'App').new_file(source_file)
-      app_target = app_project.targets.first
-      app_target.add_file_references([source_file_ref])
-      add_swift_version(app_target)
-      add_xctest(app_target) if @installer.pod_targets.any? { |pt| pt.spec_consumers.any? { |c| c.frameworks.include?('XCTest') } }
-      app_project.save
-      Xcodeproj::XCScheme.share_scheme(app_project.path, 'App')
+      include_xctest = @installer.pod_targets.any? { |pt| pt.spec_consumers.any? { |c| c.frameworks.include?('XCTest') } }
+      app_project_generator.add_app_project_import(pod_target, consumer.platform_name, use_frameworks, swift_version, include_xctest)
+      app_project_generator.save
+      Xcodeproj::XCScheme.share_scheme(app_project_generator.project_path, 'App')
       # Share the pods xcscheme only if it exists. For pre-built vendored pods there is no xcscheme generated.
       Xcodeproj::XCScheme.share_scheme(@installer.pods_project.path, pod_target.label) if shares_pod_target_xcscheme?(pod_target)
-    end
-
-    def add_swift_version(app_target)
-      app_target.build_configurations.each do |configuration|
-        configuration.build_settings['SWIFT_VERSION'] = swift_version
-      end
-    end
-
-    def add_xctest(app_target)
-      app_target.build_configurations.each do |configuration|
-        search_paths = configuration.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited)'
-        search_paths << ' "$(PLATFORM_DIR)/Developer/Library/Frameworks"'
-      end
-    end
-
-    def write_app_import_source_file(pod_target)
-      language = pod_target.uses_swift? ? :swift : :objc
-
-      if language == :swift
-        source_file = validation_dir.+('App/main.swift')
-        source_file.parent.mkpath
-        import_statement = use_frameworks && pod_target.should_build? ? "import #{pod_target.product_module_name}\n" : ''
-        source_file.open('w') { |f| f << import_statement }
-      else
-        source_file = validation_dir.+('App/main.m')
-        source_file.parent.mkpath
-        import_statement = if use_frameworks && pod_target.should_build?
-                             "@import #{pod_target.product_module_name};\n"
-                           else
-                             header_name = "#{pod_target.product_module_name}/#{pod_target.product_module_name}.h"
-                             if pod_target.sandbox.public_headers.root.+(header_name).file?
-                               "#import <#{header_name}>\n"
-                             else
-                               ''
-                             end
-        end
-        source_file.open('w') do |f|
-          f << "@import Foundation;\n"
-          f << "@import UIKit;\n" if consumer.platform_name == :ios || consumer.platform_name == :tvos
-          f << "@import Cocoa;\n" if consumer.platform_name == :osx
-          f << "#{import_statement}int main() {}\n"
-        end
-      end
-      source_file
     end
 
     # It creates a podfile in memory and builds a library containing the pod
