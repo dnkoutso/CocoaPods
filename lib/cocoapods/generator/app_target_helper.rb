@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 {
     @autoreleasepool
     {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppHostTests_AppDelegate class]));
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([CPTestAppHostAppDelegate class]));
     }
 }
 EOS
