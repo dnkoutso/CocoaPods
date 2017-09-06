@@ -15,7 +15,7 @@ module Pod
     # A small container that wraps a resolved specification for a given target definition. Additional metadata
     # is included here such as if the specification is only used by tests.
     #
-    class ResolvedSpecification
+    class ResolverSpecification
       # @return [Specification] the specification that was resolved
       #
       attr_reader :spec
@@ -97,7 +97,7 @@ module Pod
 
     # Identifies the specifications that should be installed.
     #
-    # @return [Hash{TargetDefinition => Array<ResolvedSpecification>}] specs_by_target
+    # @return [Hash{TargetDefinition => Array<ResolverSpecification>}] resolver_specs_by_target
     #         the resolved specifications that need to be installed grouped by target
     #         definition.
     #
@@ -108,18 +108,18 @@ module Pod
         end
       end
       @activated = Molinillo::Resolver.new(self, self).resolve(dependencies, locked_dependencies)
-      specs_by_target
+      resolver_specs_by_target
     rescue Molinillo::ResolverError => e
       handle_resolver_error(e)
     end
 
-    # @return [Hash{Podfile::TargetDefinition => Array<ResolvedSpecification>}]
+    # @return [Hash{Podfile::TargetDefinition => Array<ResolverSpecification>}]
     #         returns the resolved specifications grouped by target.
     #
     # @note   The returned specifications can be subspecs.
     #
-    def specs_by_target
-      @specs_by_target ||= {}.tap do |specs_by_target|
+    def resolver_specs_by_target
+      @resolver_specs_by_target ||= {}.tap do |resolver_specs_by_target|
         podfile.target_definition_list.each do |target|
           dependencies = {}
           specs = target.dependencies.map(&:name).flat_map do |name|
@@ -127,9 +127,9 @@ module Pod
             (valid_dependencies_for_target_from_node(target, dependencies, node) << node).map { |s| [s, node.payload.test_specification?] }
           end
 
-          specs_by_target[target] = specs.
+          resolver_specs_by_target[target] = specs.
             group_by(&:first).
-            map { |vertex, spec_test_only_tuples| ResolvedSpecification.new(vertex.payload, spec_test_only_tuples.map { |tuple| tuple[1] }.all?) }.
+            map { |vertex, spec_test_only_tuples| ResolverSpecification.new(vertex.payload, spec_test_only_tuples.map { |tuple| tuple[1] }.all?) }.
             sort_by(&:name)
         end
       end

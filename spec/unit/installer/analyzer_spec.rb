@@ -672,22 +672,30 @@ module Pod
 
       #-------------------------------------------------------------------------#
 
-      it 'does include pod target if its not used by tests only and is part of target definition' do
+      it 'does include pod target if any spec is not used by tests only and is part of target definition' do
+        spec1 = Resolver::ResolverSpecification.new(stub, false)
+        spec2 = Resolver::ResolverSpecification.new(stub, true)
         target_definition = stub
-        pod_target = stub(:name => 'Pod1', :target_definitions => [target_definition], :used_by_tests_only? => false)
-        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target]).should == [pod_target]
+        pod_target = stub(:name => 'Pod1', :target_definitions => [target_definition], :specs => [spec1.spec, spec2.spec])
+        resolver_specs_by_target = {target_definition => [spec1, spec2]}
+        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target], resolver_specs_by_target).should == [pod_target]
       end
 
       it 'does not include pod target if its used by tests only' do
+        spec1 = Resolver::ResolverSpecification.new(stub, true)
+        spec2 = Resolver::ResolverSpecification.new(stub, true)
         target_definition = stub
-        pod_target = stub(:name => 'Pod1', :target_definitions => [target_definition], :used_by_tests_only? => true)
-        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target]).should.be.empty
+        pod_target = stub(:name => 'Pod1', :target_definitions => [target_definition], :specs => [spec1.spec, spec2.spec])
+        resolver_specs_by_target = {target_definition => [spec1, spec2]}
+        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target], resolver_specs_by_target).should.be.empty
       end
 
       it 'does not include pod target if its not part of the target definition' do
+        spec = Resolver::ResolverSpecification.new(stub, false)
         target_definition = stub
-        pod_target = stub(:name => 'Pod1', :target_definitions => [])
-        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target]).should.be.empty
+        pod_target = stub(:name => 'Pod1', :target_definitions => [], :specs => [spec.spec])
+        resolver_specs_by_target = {target_definition => [spec]}
+        @analyzer.send(:filter_pod_targets_for_target_definition, target_definition, [pod_target], resolver_specs_by_target).should.be.empty
       end
 
       describe 'extension targets' do

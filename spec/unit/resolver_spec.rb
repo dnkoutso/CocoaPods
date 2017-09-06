@@ -62,7 +62,7 @@ module Pod
       it 'returns the resolved specifications grouped by target definition' do
         @resolver.resolve
         target_definition = @podfile.target_definitions['Pods']
-        specs = @resolver.specs_by_target[target_definition]
+        specs = @resolver.resolver_specs_by_target[target_definition]
         specs.map(&:spec).map(&:to_s).should == [
           'A2DynamicDelegate (2.0.2)',
           'BlocksKit (1.5.2)',
@@ -80,7 +80,7 @@ module Pod
         end
         resolver = Resolver.new(config.sandbox, podfile, empty_graph, config.sources_manager.all)
         resolver.resolve
-        specs = resolver.specs_by_target.values.flatten
+        specs = resolver.resolver_specs_by_target.values.flatten
         specs.map(&:spec).map(&:to_s).should == ['Reachability (3.0.0)']
       end
 
