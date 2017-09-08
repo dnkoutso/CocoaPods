@@ -84,7 +84,7 @@ module Pod
           XCConfigHelper.add_dynamic_dependency_build_settings(aggregate_target, pod_target, xcconfig)
           if pod_target.requires_frameworks?
             pod_target.dependent_targets.each do |dependent_target|
-              XCConfigHelper.add_dynamic_dependency_build_settings(dependent_target, xcconfig)
+              XCConfigHelper.add_dynamic_dependency_build_settings(aggregate_target,dependent_target, xcconfig)
             end
           end
         end
