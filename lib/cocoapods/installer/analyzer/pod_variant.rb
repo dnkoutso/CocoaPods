@@ -7,6 +7,10 @@ module Pod
         #
         attr_accessor :specs
 
+        # @return [Array<Specification>] the test specs for the target
+        #
+        attr_accessor :testspecs
+
         # @return [Platform] the platform
         #
         attr_accessor :platform
@@ -24,14 +28,19 @@ module Pod
 
         # Initialize a new instance from its attributes.
         #
-        # @param [Array<String>] specs       @see #specs
-        # @param [Platform] platform         @see #platform
-        # @param [Bool] requires_frameworks  @see #requires_frameworks?
+        # @param [Array<Specification>] specs @see #specs
+        # @param [Platform] platform          @see #platform
+        # @param [Bool] requires_frameworks   @see #requires_frameworks?
         #
         def initialize(specs, platform, requires_frameworks = false)
           self.specs = specs
+          self.testspecs = []
           self.platform = platform
           self.requires_frameworks = requires_frameworks
+        end
+
+        def add_testspecs(testspecs_to_add)
+          testspecs.concat(testspecs_to_add).uniq!
         end
 
         # @return [Bool] whether the {PodVariant} is equal to another taking all
