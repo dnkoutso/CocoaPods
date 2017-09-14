@@ -26,7 +26,11 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
 
 ##### Bug Fixes
 
-* Ensure a unique ID is generated for each resource bundle
+* Do not merge `pod_target_xcconfig` from test specs into non test xcconfigs  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#7037](https://github.com/CocoaPods/CocoaPods/pull/7037)
+
+* Ensure a unique ID is generated for each resource bundle  
   [Justin Martin](https://github.com/justinseanmartin)
   [#7015](https://github.com/CocoaPods/CocoaPods/pull/7015)
 * Do not include settings from file accessors of test specs into aggregate xcconfigs  
