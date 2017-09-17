@@ -510,8 +510,10 @@ module Pod
     #         more Pods.
     #
     def target_definition_dependencies(target_definition)
-      target_definition.dependencies.select do |dependency|
-        Specification.root_name(dependency.name) == pod_name
+      @target_definition_dependencies ||= begin
+        target_definition.dependencies.select do |dependency|
+          Specification.root_name(dependency.name) == pod_name
+        end
       end
     end
   end

@@ -45,6 +45,8 @@ module Pod
         unless @spec_consumer
           raise Informative, 'Attempt to initialize File Accessor without a specification consumer.'
         end
+
+        @cache = {}
       end
 
       # @return [Pathname] the directory which contains the files of the Pod.
@@ -327,13 +329,19 @@ module Pod
       # @return [Array<Pathname>] the paths.
       #
       def paths_for_attribute(attribute, include_dirs = false)
-        file_patterns = spec_consumer.send(attribute)
-        options = {
-          :exclude_patterns => spec_consumer.exclude_files,
-          :dir_pattern => GLOB_PATTERNS[attribute],
-          :include_dirs => include_dirs,
-        }
-        expanded_paths(file_patterns, options)
+        key = [attribute, include_dirs]
+        if @cache[key]
+          return @cache[key]
+        end
+        @cache[key] = begin
+          file_patterns = spec_consumer.send(attribute)
+          options = {
+            :exclude_patterns => spec_consumer.exclude_files,
+            :dir_pattern => GLOB_PATTERNS[attribute],
+            :include_dirs => include_dirs,
+          }
+          expanded_paths(file_patterns, options)
+        end
       end
 
       # Matches the given patterns to the file present in the root of the path

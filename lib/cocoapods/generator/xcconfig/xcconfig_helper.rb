@@ -109,11 +109,11 @@ module Pod
           if aggregate_target.nil? || !file_accessor.spec.test_specification?
             file_accessor.vendored_static_frameworks.each do |vendored_static_framework|
               adds_other_ldflags = XCConfigHelper.links_dependency?(aggregate_target, pod_target)
-              XCConfigHelper.add_framework_build_settings(vendored_static_framework, xcconfig, pod_target.sandbox.root, adds_other_ldflags)
+              XCConfigHelper.framework_build_settings_for_path(vendored_static_framework, xcconfig, pod_target.sandbox.root, adds_other_ldflags)
             end
             file_accessor.vendored_static_libraries.each do |vendored_static_library|
               adds_other_ldflags = XCConfigHelper.links_dependency?(aggregate_target, pod_target)
-              XCConfigHelper.add_library_build_settings(vendored_static_library, xcconfig, pod_target.sandbox.root, adds_other_ldflags)
+              XCConfigHelper.library_build_settings_for_path(vendored_static_library, xcconfig, pod_target.sandbox.root, adds_other_ldflags)
             end
           end
         end
@@ -151,10 +151,10 @@ module Pod
           pod_target.file_accessors.each do |file_accessor|
             if aggregate_target.nil? || !file_accessor.spec.test_specification?
               file_accessor.vendored_dynamic_frameworks.each do |vendored_dynamic_framework|
-                XCConfigHelper.add_framework_build_settings(vendored_dynamic_framework, xcconfig, pod_target.sandbox.root)
+                XCConfigHelper.framework_build_settings_for_path(vendored_dynamic_framework, xcconfig, pod_target.sandbox.root)
               end
               file_accessor.vendored_dynamic_libraries.each do |vendored_dynamic_library|
-                XCConfigHelper.add_library_build_settings(vendored_dynamic_library, xcconfig, pod_target.sandbox.root)
+                XCConfigHelper.library_build_settings_for_path(vendored_dynamic_library, xcconfig, pod_target.sandbox.root)
               end
             end
           end
@@ -181,7 +181,7 @@ module Pod
         # Configures the given Xcconfig with the build settings for the given
         # framework path.
         #
-        # @param  [Pathname] framework_path
+        # @param  [Pathname] path
         #         The path of the framework.
         #
         # @param  [Xcodeproj::Config] xcconfig
@@ -192,20 +192,19 @@ module Pod
         #
         # @return [void]
         #
-        def self.add_framework_build_settings(framework_path, xcconfig, sandbox_root, include_other_ldflags = true)
-          name = File.basename(framework_path, '.framework')
-          dirname = '${PODS_ROOT}/' + framework_path.dirname.relative_path_from(sandbox_root).to_s
+        def self.framework_build_settings_for_path(path, xcconfig, sandbox_root, include_other_ldflags = true)
+          name = File.basename(path, '.framework')
+          dirname = '${PODS_ROOT}/' + path.dirname.relative_path_from(sandbox_root).to_s
           build_settings = {
             'FRAMEWORK_SEARCH_PATHS' => quote([dirname]),
           }
           build_settings['OTHER_LDFLAGS'] = "-framework #{name}" if include_other_ldflags
-          xcconfig.merge!(build_settings)
         end
 
         # Configures the given Xcconfig with the build settings for the given
         # library path.
         #
-        # @param  [Pathname] library_path
+        # @param  [Pathname] path
         #         The path of the library.
         #
         # @param  [Xcodeproj::Config] xcconfig
@@ -216,15 +215,14 @@ module Pod
         #
         # @return [void]
         #
-        def self.add_library_build_settings(library_path, xcconfig, sandbox_root, include_other_ldflags = true)
-          extension = File.extname(library_path)
-          name = File.basename(library_path, extension).sub(/\Alib/, '')
-          dirname = '${PODS_ROOT}/' + library_path.dirname.relative_path_from(sandbox_root).to_s
+        def self.library_build_settings_for_path(path, xcconfig, sandbox_root, include_other_ldflags = true)
+          extension = File.extname(path)
+          name = File.basename(path, extension).sub(/\Alib/, '')
+          dirname = '${PODS_ROOT}/' + path.dirname.relative_path_from(sandbox_root).to_s
           build_settings = {
             'LIBRARY_SEARCH_PATHS' => quote([dirname]),
           }
           build_settings['OTHER_LDFLAGS'] = "-l#{name}" if include_other_ldflags
-          xcconfig.merge!(build_settings)
         end
 
         # Add the code signing settings for generated targets to ensure that
