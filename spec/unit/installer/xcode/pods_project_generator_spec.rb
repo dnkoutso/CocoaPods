@@ -262,7 +262,7 @@ module Pod
 
             it 'adds all test dependent targets to test native targets' do
               mock_native_target = mock('CoconutLib')
-              mock_test_native_target = mock('CoconutLib-Unit-Tests')
+              mock_test_native_target = mock('CoconutLib-Unit-Tests', :symbol_type => :unit_test_bundle)
 
               dependent_native_target = mock('DependentNativeTarget')
               test_dependent_native_target = mock('TestDependentNativeTarget')
@@ -295,6 +295,7 @@ module Pod
               @target.stubs(:pod_targets).returns([])
               @generator.expects(:pod_targets).returns([@pod_target])
               mock_native_target = mock('CoconutLib')
+              mock_test_native_target = mock('CoconutLib-Unit-Tests', :symbol_type => :unit_test_bundle)
 
               dependent_native_target = mock('DependentNativeTarget')
               dependent_target = mock('dependent-target', :dependent_targets => [])
@@ -302,18 +303,20 @@ module Pod
               dependent_target.stubs(:native_target).returns(dependent_native_target)
 
               @pod_target.stubs(:native_target).returns(mock_native_target)
-              @pod_target.stubs(:test_native_targets).returns([])
+              @pod_target.stubs(:test_native_targets).returns([mock_test_native_target])
               @pod_target.stubs(:dependent_targets).returns([dependent_target])
               @pod_target.stubs(:test_dependent_targets).returns([])
               @pod_target.stubs(:should_build? => true)
 
               mock_native_target.expects(:add_dependency).with(dependent_native_target)
+              mock_test_native_target.expects(:add_dependency).with(dependent_native_target)
+              mock_test_native_target.expects(:add_dependency).with(mock_native_target)
 
               @generator.send(:set_target_dependencies)
             end
 
             it 'adds test dependencies to test native targets for a pod target that should not be built' do
-              mock_test_native_target = mock('CoconutLib-Unit-Tests')
+              mock_test_native_target = mock('CoconutLib-Unit-Tests', :symbol_type => :unit_test_bundle)
               test_dependent_native_target = mock('TestDependentNativeTarget')
               test_dependent_target = mock('dependent-test-target', :should_build? => true, :native_target => test_dependent_native_target)
               test_dependent_target.expects(:should_build?).returns(true)
@@ -328,7 +331,7 @@ module Pod
             end
 
             it 'sets resource bundles for not build pods as target dependencies of the test target' do
-              mock_test_native_target = mock('CoconutLib-Unit-Tests')
+              mock_test_native_target = mock('CoconutLib-Unit-Tests', :symbol_type => :unit_test_bundle)
 
               @pod_target.stubs(:test_native_targets).returns([mock_test_native_target])
               @pod_target.stubs(:test_dependent_targets).returns([])

@@ -138,10 +138,9 @@ module Pod
           #
           # @return [void]
           #
-          def create_info_plist_file
-            path = target.info_plist_path
+          def create_info_plist_file(path, native_target, version, platform, bundle_package_type = :fmwk)
             UI.message "- Generating Info.plist file at #{UI.path(path)}" do
-              generator = Generator::InfoPlistFile.new(target)
+              generator = Generator::InfoPlistFile.new(version, platform, bundle_package_type)
               update_changed_file(generator, path)
               add_file_to_support_group(path)
 

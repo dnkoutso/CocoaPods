@@ -180,6 +180,12 @@ module Pod
       support_files_dir + "#{label}-dummy.m"
     end
 
+    # @return [String] The version associated with this target
+    #
+    def version
+      '1.0.0'
+    end
+
     #-------------------------------------------------------------------------#
 
     private
