@@ -27,10 +27,6 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
   [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
   [#6820](https://github.com/CocoaPods/CocoaPods/pull/6820)
 
-* Show full requirement trees when a version conflict is encountered during 
-  dependency resolution.  
-  [Samuel Giddins](https://github.com/segiddins)
-
 * Add support for source static library frameworks  
   [Paul Beusterien](https://github.com/paulb777)
   [#6811](https://github.com/CocoaPods/CocoaPods/pull/6811)
