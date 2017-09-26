@@ -185,8 +185,8 @@ module Pod
               next unless test_spec.consumer(target.platform).requires_app_host?
               name = target.app_host_label(test_spec.test_type)
               platform_name = target.platform.name
-              app_host_target = !project.targets.find { |t| t.name == name }
-              unless app_host_target.nil?
+              app_host_target = project.targets.find { |t| t.name == name }
+              if app_host_target.nil?
                 app_host_target = Pod::Generator::AppTargetHelper.add_app_target(project, platform_name, deployment_target, name)
                 app_host_target.build_configurations.each do |configuration|
                   configuration.build_settings.merge!(custom_build_settings)
