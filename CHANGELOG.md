@@ -14,7 +14,9 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
 
 ##### Bug Fixes
 
-* None.  
+* Fix framework and resources paths caching  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#7068](https://github.com/CocoaPods/CocoaPods/pull/7068)
 
 
 ## 1.4.0.beta.1 (2017-09-24)
