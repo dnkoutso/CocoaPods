@@ -22,10 +22,15 @@ module Pod
       #
       def integrate!
         UI.section(integration_message) do
-          target.test_native_targets.each do |native_target|
+          target.specs.select(&:test_specification?).each do |test_spec|
+            native_target = target.native_target_for_spec(test_spec)
             add_embed_frameworks_script_phase(native_target)
             add_copy_resources_script_phase(native_target)
+            consumer = test_spec.consumer(target.platform)
+            UserProjectIntegrator::TargetIntegrator.create_or_update_user_script_phases(consumer.script_phases, native_target)
           end
+          spec_consumers = target.specs.reject(&:test_specification?).map { |spec| spec.consumer(target.platform) }
+          UserProjectIntegrator::TargetIntegrator.create_or_update_user_script_phases(spec_consumers.map(&:script_phases).flatten, target.native_target)
         end
       end
 
@@ -54,7 +59,7 @@ module Pod
           input_paths = [script_path, *resource_paths.flatten.uniq]
           output_paths = ['${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}']
         end
-        Pod::Installer::UserProjectIntegrator::TargetIntegrator.add_copy_resources_script_phase_to_target(native_target, script_path, input_paths, output_paths)
+        UserProjectIntegrator::TargetIntegrator.add_copy_resources_script_phase_to_target(native_target, script_path, input_paths, output_paths)
       end
 
       # Find or create a 'Embed Pods Frameworks' Copy Files Build Phase
@@ -71,7 +76,7 @@ module Pod
           input_paths = [script_path, *framework_paths.map { |fw| [fw[:input_path], fw[:dsym_input_path]] }.flatten.compact]
           output_paths = framework_paths.map { |fw| [fw[:output_path], fw[:dsym_output_path]] }.flatten.compact
         end
-        Pod::Installer::UserProjectIntegrator::TargetIntegrator.add_embed_frameworks_script_phase_to_target(native_target, script_path, input_paths, output_paths)
+        UserProjectIntegrator::TargetIntegrator.add_embed_frameworks_script_phase_to_target(native_target, script_path, input_paths, output_paths)
       end
 
       # @return [String] the message that should be displayed for the target
