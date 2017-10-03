@@ -448,7 +448,7 @@ module Pod
       app_project = Xcodeproj::Project.open(validation_dir + 'App.xcodeproj')
       app_target = app_project.targets.first
       pod_target = @installer.pod_targets.find { |pt| pt.pod_name == spec.root.name }
-      Pod::Generator::AppTargetHelper.add_app_project_import(app_project, app_target, pod_target, consumer.platform_name, deployment_target)
+      Pod::Generator::AppTargetHelper.add_app_project_import(app_project, app_target, pod_target, consumer.platform_name, use_frameworks)
       Pod::Generator::AppTargetHelper.add_swift_version(app_target, swift_version)
       Pod::Generator::AppTargetHelper.add_xctest(app_target) if @installer.pod_targets.any? { |pt| pt.spec_consumers.any? { |c| c.frameworks.include?('XCTest') } }
       app_project.save
