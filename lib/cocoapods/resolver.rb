@@ -23,7 +23,7 @@ module Pod
       # @return [Bool] whether this resolved specification is only used by tests.
       #
       attr_reader :used_by_tests_only
-      alias used_by_tests_only? used_by_tests_only
+      alias_method :used_by_tests_only?, :used_by_tests_only
 
       def initialize(spec, used_by_tests_only)
         @spec = spec
@@ -120,14 +120,16 @@ module Pod
     #
     def resolver_specs_by_target
       @resolver_specs_by_target ||= {}.tap do |resolver_specs_by_target|
-        podfile.target_definition_list.each do |target|
+        podfile.target_definition_list.each do |target_definition|
           dependencies = {}
-          specs = target.dependencies.map(&:name).flat_map do |name|
+          specs = target_definition.dependencies.map(&:name).flat_map do |name|
             node = @activated.vertex_named(name)
-            (valid_dependencies_for_target_from_node(target, dependencies, node) << node).map { |s| [s, node.payload.test_specification?] }
+            (valid_dependencies_for_target_from_node(target_definition, dependencies, node) << node).map { |s| [s, node.payload.test_specification?] }
           end
 
-          resolver_specs_by_target[target] = specs.
+          puts "=========== #{specs}"
+
+          resolver_specs_by_target[target_definition] = specs.
             group_by(&:first).
             map { |vertex, spec_test_only_tuples| ResolverSpecification.new(vertex.payload, spec_test_only_tuples.map { |tuple| tuple[1] }.all?) }.
             sort_by(&:name)
@@ -541,15 +543,15 @@ module Pod
     #         An array of target-appropriate nodes whose `payload`s are
     #         dependencies for `target`.
     #
-    def valid_dependencies_for_target_from_node(target, dependencies, node)
+    def valid_dependencies_for_target_from_node(target_definition, dependencies, node)
       dependencies[node.name] ||= begin
-        validate_platform(node.payload, target)
+        validate_platform(node.payload, target_definition)
         dependency_nodes = node.outgoing_edges.select do |edge|
-          edge_is_valid_for_target?(edge, target)
+          edge_is_valid_for_target?(edge, target_definition)
         end.map(&:destination)
 
         dependency_nodes + dependency_nodes.flat_map do |item|
-          node_result = valid_dependencies_for_target_from_node(target, dependencies, item)
+          node_result = valid_dependencies_for_target_from_node(target_definition, dependencies, item)
           node_result
         end
       end
@@ -560,9 +562,9 @@ module Pod
     #
     # @return [Bool]
     #
-    def edge_is_valid_for_target?(edge, target)
+    def edge_is_valid_for_target?(edge, target_definition)
       dependencies_for_target_platform =
-        edge.origin.payload.all_dependencies(target.platform).map(&:name)
+        edge.origin.payload.all_dependencies(target_definition.platform).map(&:name)
       dependencies_for_target_platform.include?(edge.requirement.name)
     end
   end

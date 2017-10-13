@@ -115,7 +115,7 @@ module Pod
           [target]
         end
 
-        # @param  [Array<PBXNativeTarget] the user's targets of the project of
+        # @param  [Array<PBXNativeTarget>] user_targets the user's targets of the project of
         #         #target_definition which needs to be integrated
         #
         # @return [Hash{String=>Symbol}] A hash representing the user build
@@ -132,7 +132,7 @@ module Pod
           end
         end
 
-        # @param  [Array<PBXNativeTarget] the user's targets of the project of
+        # @param  [Array<PBXNativeTarget>] user_targets the user's targets of the project of
         #         #target_definition which needs to be integrated
         #
         # @return [Platform] The platform of the user's targets
@@ -171,7 +171,7 @@ module Pod
 
         # Computes the architectures relevant for the user's targets.
         #
-        # @param  [Array<PBXNativeTarget] the user's targets of the project of
+        # @param  [Array<PBXNativeTarget>] user_targets the user's targets of the project of
         #         #target_definition which needs to be integrated
         #
         # @return [Array<String>]
