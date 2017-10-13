@@ -765,7 +765,7 @@ module Pod
 
         resolver_specs_by_target = nil
         UI.section "Resolving dependencies of #{UI.path(podfile.defined_in_file) || 'Podfile'}" do
-          resolver = Resolver.new(sandbox, podfile, locked_dependencies, sources)
+          resolver = Resolver.new(sandbox, podfile, locked_dependencies, sources, @result.target_inspections)
           resolver.specs_updated = specs_updated?
           resolver_specs_by_target = resolver.resolve
           resolver_specs_by_target.values.flatten(1).map(&:spec).each(&:validate_cocoapods_version)

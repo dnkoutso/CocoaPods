@@ -23,7 +23,7 @@ module Pod
       # @return [Bool] whether this resolved specification is only used by tests.
       #
       attr_reader :used_by_tests_only
-      alias_method :used_by_tests_only?, :used_by_tests_only
+      alias used_by_tests_only? used_by_tests_only
 
       def initialize(spec, used_by_tests_only)
         @spec = spec
@@ -63,6 +63,10 @@ module Pod
     #
     attr_reader :locked_dependencies
 
+    # @return [TODO] TODO
+    #
+    attr_reader :target_inspections
+
     # @return [Array<Source>] The list of the sources which will be used for
     #         the resolution.
     #
@@ -80,12 +84,13 @@ module Pod
     # @param  [Array<Dependency>] locked_dependencies @see locked_dependencies
     # @param  [Array<Source>, Source] sources @see sources
     #
-    def initialize(sandbox, podfile, locked_dependencies, sources)
+    def initialize(sandbox, podfile, locked_dependencies, sources, target_inspections)
       @sandbox = sandbox
       @podfile = podfile
       @locked_dependencies = locked_dependencies
       @sources = Array(sources)
       @platforms_by_dependency = Hash.new { |h, k| h[k] = [] }
+      @target_inspections = target_inspections
       @cached_sets = {}
     end
 
@@ -124,10 +129,13 @@ module Pod
           dependencies = {}
           specs = target_definition.dependencies.map(&:name).flat_map do |name|
             node = @activated.vertex_named(name)
-            (valid_dependencies_for_target_from_node(target_definition, dependencies, node) << node).map { |s| [s, node.payload.test_specification?] }
+            puts "========== #{target_inspections[target_definition]}"
+            target_inspections[target_definition].build_configurations.each do |configuration|
+              puts "====== #{configuration}"
+            end
+            result = (valid_dependencies_for_target_from_node(target_definition, dependencies, node) << node)
+            result.map { |s| [s, node.payload.test_specification?] }
           end
-
-          puts "=========== #{specs}"
 
           resolver_specs_by_target[target_definition] = specs.
             group_by(&:first).

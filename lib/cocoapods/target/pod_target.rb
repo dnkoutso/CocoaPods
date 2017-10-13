@@ -456,20 +456,13 @@ module Pod
     #         The name of the build configuration.
     #
     def include_in_build_config?(target_definition, configuration_name)
-      key = [target_definition.label, configuration_name]
-      if @build_config_cache.key?(key)
-        return @build_config_cache[key]
-      end
-
       whitelists = target_definition_dependencies(target_definition).map do |dependency|
         target_definition.pod_whitelisted_for_configuration?(dependency.name, configuration_name)
       end.uniq
 
       if whitelists.empty?
-        @build_config_cache[key] = true
         true
       elsif whitelists.count == 1
-        @build_config_cache[key] = whitelists.first
         whitelists.first
       else
         raise Informative, "The subspecs of `#{pod_name}` are linked to " \
