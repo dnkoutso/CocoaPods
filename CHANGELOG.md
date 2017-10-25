@@ -12,8 +12,9 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
 
 ##### Bug Fixes
 
-* None.  
-
+* Prevent multiple script phases from stripping vendored dSYM  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#XXXX](https://github.com/CocoaPods/CocoaPods/pull/XXXX)
 
 ## 1.4.0.beta.2 (2017-10-24)
 
