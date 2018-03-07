@@ -1,8 +1,8 @@
 module Pod
   # Stores the information relative to the target used to compile a single Pod.
-  # A pod can have one or more activated spec/subspecs.
-  #
-  class PodTarget < Target
+    # A pod can have one or more activated spec/subspecs.
+    #
+    class PodTarget < Target
     # @return [Array<Specification>] the spec and subspecs for the target.
     #
     attr_reader :specs
@@ -23,20 +23,24 @@ module Pod
     #
     attr_reader :scope_suffix
 
+    # @return [Array<PBXNativeTarget>] the resource bundle targets belonging
+    #         to this target.
+    #
+    attr_reader :resource_bundle_targets
+
     # @return [Array<PodTarget>] the targets that this target has a dependency
     #         upon.
     #
     attr_accessor :dependent_targets
 
-    # @return [Array<PodTarget>] the targets that this target has a test dependency
-    #         upon.
+    # @return [Array<TestPodTarget>] the test pod targets that are part of this pod target.
     #
-    attr_accessor :test_dependent_targets
+    attr_accessor :test_pod_targets
 
-    # return [Array<PBXNativeTarget>] the test target generated in the Pods project for
-    #         this library or `nil` if there is no test target created.
+    # @return [Array<Sandbox::FileAccessor>] the file accessors for the
+    #         specifications of this target.
     #
-    attr_accessor :test_native_targets
+    attr_accessor :file_accessors
 
     # @param [Array<Specification>] specs @see #specs
     # @param [Array<TargetDefinition>] target_definitions @see #target_definitions
@@ -49,18 +53,14 @@ module Pod
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions" if target_definitions.all?(&:abstract?)
       raise "Can't initialize a PodTarget with an empty string scope suffix!" if scope_suffix == ''
       super()
-      @specs = specs.dup.freeze
-      @test_specs, @non_test_specs = @specs.partition(&:test_specification?)
+      @specs = specs.reject(&:test_specification?).dup.freeze
       @target_definitions = target_definitions
       @sandbox = sandbox
       @scope_suffix = scope_suffix
       @build_headers  = Sandbox::HeadersStore.new(sandbox, 'Private', :private)
       @file_accessors = []
       @resource_bundle_targets = []
-      @test_resource_bundle_targets = []
-      @test_native_targets = []
       @dependent_targets = []
-      @test_dependent_targets = []
       @build_config_cache = {}
     end
 
@@ -75,6 +75,7 @@ module Pod
           cache[cache_key]
         else
           target = PodTarget.new(specs, [target_definition], sandbox, target_definition.label)
+          # TODO TEST STUFFf
           target.file_accessors = file_accessors
           target.user_build_configurations = user_build_configurations
           target.native_target = native_target
@@ -150,19 +151,6 @@ module Pod
       root_spec.module_name
     end
 
-    # @return [Array<Sandbox::FileAccessor>] the file accessors for the
-    #         specifications of this target.
-    #
-    attr_accessor :file_accessors
-
-    # @return [Array<PBXNativeTarget>] the resource bundle targets belonging
-    #         to this target.
-    attr_reader :resource_bundle_targets
-
-    # @return [Array<PBXNativeTarget>] the resource bundle test targets belonging
-    #         to this target.
-    attr_reader :test_resource_bundle_targets
-
     # @return [Bool] Whether or not this target should be built.
     #
     # A target should not be built if it has no source files.
@@ -225,27 +213,17 @@ module Pod
     #         an array of all the test specs associated with this native target.
     #
     def test_specs_by_native_target
-      test_specs.group_by { |test_spec| native_target_for_spec(test_spec) }
+      # TODO fix this
+      {}
+      # test_specs.group_by { |test_spec| native_target_for_spec(test_spec) }
     end
 
     # @return [Boolean] Whether the target has any tests specifications.
     #
     def contains_test_specifications?
-      !test_specs.empty?
-    end
-
-    # @return [Array<Specification>] All of the test specs within this target.
-    #
-    attr_reader :test_specs
-
-    # @return [Array<Specification>] All of the specs within this target that are not test specs.
-    #
-    attr_reader :non_test_specs
-
-    # @return [Array<Symbol>] All of the test supported types within this target.
-    #
-    def supported_test_types
-      test_specs.map(&:test_type).uniq
+      false
+      # TODO fix this
+      # !test_specs.empty?
     end
 
     # Returns the framework paths associated with this target. By default all paths include the framework paths
@@ -331,40 +309,6 @@ module Pod
       end
     end
 
-    # Returns the corresponding native product type to use given the test type.
-    # This is primarily used when creating the native targets in order to produce the correct test bundle target
-    # based on the type of tests included.
-    #
-    # @param  [Symbol] test_type
-    #         The test type to map to provided by the test specification DSL.
-    #
-    # @return [Symbol] The native product type to use.
-    #
-    def product_type_for_test_type(test_type)
-      case test_type
-      when :unit
-        :unit_test_bundle
-      else
-        raise Informative, "Unknown test type `#{test_type}`."
-      end
-    end
-
-    # Returns the corresponding test type given the product type.
-    #
-    # @param  [Symbol] product_type
-    #         The product type to map to a test type.
-    #
-    # @return [Symbol] The native product type to use.
-    #
-    def test_type_for_product_type(product_type)
-      case product_type
-      when :unit_test_bundle
-        :unit
-      else
-        raise Informative, "Unknown product type `#{product_type}`."
-      end
-    end
-
     # @return [Specification] The root specification for the target.
     #
     def root_spec
@@ -400,55 +344,10 @@ module Pod
       "#{label}-#{bundle_name}"
     end
 
-    # @param  [Symbol] test_type
-    #         The test type to use for producing the test label.
-    #
-    # @return [String] The derived name of the test target.
-    #
-    def test_target_label(test_type)
-      "#{label}-#{test_type.capitalize}-Tests"
-    end
-
-    # @param  [Symbol] test_type
-    #         The test type to use for producing the test label.
-    #
-    # @return [String] The label of the app host label to use given the platform and test type.
-    #
-    def app_host_label(test_type)
-      "AppHost-#{Platform.string_name(platform.symbolic_name)}-#{test_type.capitalize}-Tests"
-    end
-
-    # @param  [Symbol] test_type
-    #         The test type this embed frameworks script path is for.
-    #
-    # @return [Pathname] The absolute path of the copy resources script for the given test type.
-    #
-    def copy_resources_script_path_for_test_type(test_type)
-      support_files_dir + "#{test_target_label(test_type)}-resources.sh"
-    end
-
-    # @param  [Symbol] test_type
-    #         The test type this embed frameworks script path is for.
-    #
-    # @return [Pathname] The absolute path of the embed frameworks script for the given test type.
-    #
-    def embed_frameworks_script_path_for_test_type(test_type)
-      support_files_dir + "#{test_target_label(test_type)}-frameworks.sh"
-    end
-
     # @return [Pathname] the absolute path of the prefix header file.
     #
     def prefix_header_path
       support_files_dir + "#{label}-prefix.pch"
-    end
-
-    # @param  [Symbol] test_type
-    #         The test type prefix header path is for.
-    #
-    # @return [Pathname] the absolute path of the prefix header file for the given test type.
-    #
-    def prefix_header_path_for_test_type(test_type)
-      support_files_dir + "#{test_target_label(test_type)}-prefix.pch"
     end
 
     # @return [Array<String>] The names of the Pods on which this target
@@ -469,23 +368,6 @@ module Pod
 
         targets.each do |target|
           target.dependent_targets.each do |t|
-            targets.push(t) unless t == self || targets.include?(t)
-          end
-        end
-
-        targets
-      end
-    end
-
-    # @return [Array<PodTarget>] the recursive targets that this target has a
-    #         test dependency upon.
-    #
-    def recursive_test_dependent_targets
-      @recursive_test_dependent_targets ||= begin
-        targets = test_dependent_targets.clone
-
-        targets.each do |target|
-          target.test_dependent_targets.each do |t|
             targets.push(t) unless t == self || targets.include?(t)
           end
         end
