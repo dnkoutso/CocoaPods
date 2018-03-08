@@ -616,7 +616,16 @@ module Pod
           end
         end
 
+
+
         pod_target
+      end
+
+      # TODO
+      #
+      def generate_test_pod_target(pod_target, test_specs)
+        test_pod_target = TestPodTarget.new(pod_target, test_specs)
+        test_pod_target
       end
 
       # Generates dependencies that require the specific version of the Pods
