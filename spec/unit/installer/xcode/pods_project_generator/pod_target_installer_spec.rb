@@ -31,7 +31,7 @@ module Pod
 
               @pod_target = PodTarget.new(config.sandbox, false, { 'Debug' => :debug, 'Release' => :release }, [], [@spec], [@target_definition], nil)
               @pod_target.file_accessors = [file_accessor]
-              @installer = PodTargetInstaller.new(config.sandbox, @pod_target)
+              @installer = PodTargetInstaller.new(config.sandbox, @pod_target, nil)
 
               @spec.prefix_header_contents = '#import "BlocksKit.h"'
             end
@@ -526,7 +526,7 @@ module Pod
             describe 'with a scoped pod target' do
               before do
                 @pod_target = @pod_target.scoped.first
-                @installer = PodTargetInstaller.new(config.sandbox, @pod_target)
+                @installer = PodTargetInstaller.new(config.sandbox, @pod_target, nil)
               end
 
               it 'adds file references for the support files of the target' do
@@ -987,7 +987,7 @@ module Pod
                 @project.add_pod_group('BananaLib', fixture('banana-lib'))
 
                 @pod_target = fixture_pod_target(@spec, false, 'Debug' => :debug, 'Release' => :release)
-                target_installer = PodTargetInstaller.new(config.sandbox, @pod_target)
+                target_installer = PodTargetInstaller.new(config.sandbox, @pod_target, nil)
 
                 # Use a file references installer to add the files so that the correct ones are added.
                 file_ref_installer = Installer::Xcode::PodsProjectGenerator::FileReferencesInstaller.new(config.sandbox, [@pod_target], @project)
