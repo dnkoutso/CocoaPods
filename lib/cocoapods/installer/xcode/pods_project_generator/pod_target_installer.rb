@@ -30,7 +30,6 @@ module Pod
           def install!
             unless target.should_build?
               resource_bundle_targets = add_resources_bundle_targets(nil, nil)
-              # TODO return empty installation result
               return PodTargetInstallationResult.new(target, nil, nil, nil, resource_bundle_targets, [])
             end
 

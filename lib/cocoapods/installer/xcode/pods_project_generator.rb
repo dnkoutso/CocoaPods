@@ -12,19 +12,15 @@ module Pod
         require 'cocoapods/installer/xcode/pods_project_generator/file_references_installer'
         require 'cocoapods/installer/xcode/pods_project_generator/aggregate_target_installer'
 
-        # @return [Pod::Project] the `Pods/Pods.xcodeproj` project.
+        # @return [Sandbox] The sandbox where the Pods should be installed.
         #
-        attr_reader :project
+        attr_reader :sandbox
 
         # @return [Array<AggregateTarget>] The model representations of an
         #         aggregation of pod targets generated for a target definition
         #         in the Podfile.
         #
         attr_reader :aggregate_targets
-
-        # @return [Sandbox] The sandbox where the Pods should be installed.
-        #
-        attr_reader :sandbox
 
         # @return [Array<PodTarget>] The model representations of pod targets.
         #
@@ -53,8 +49,8 @@ module Pod
         # @param  [Config]                 config                @see #config
         #
         def initialize(aggregate_targets, sandbox, pod_targets, analysis_result, installation_options, config)
-          @aggregate_targets = aggregate_targets
           @sandbox = sandbox
+          @aggregate_targets = aggregate_targets
           @pod_targets = pod_targets
           @analysis_result = analysis_result
           @installation_options = installation_options
@@ -220,48 +216,48 @@ module Pod
         # @return [void]
         #
         def set_target_dependencies
-          # frameworks_group = project.frameworks_group
-          # test_only_pod_targets = pod_targets.dup
-          # aggregate_targets.each do |aggregate_target|
-          #   is_app_extension = !(aggregate_target.user_targets.map(&:symbol_type) &
-          #                        [:app_extension, :watch_extension, :watch2_extension, :tv_extension, :messages_extension]).empty?
-          #   is_app_extension ||= aggregate_target.user_targets.any? { |ut| ut.common_resolved_build_setting('APPLICATION_EXTENSION_API_ONLY') == 'YES' }
-          #
-          #   aggregate_target.pod_targets.each do |pod_target|
-          #     test_only_pod_targets.delete(pod_target)
-          #     configure_app_extension_api_only_for_target(aggregate_target) if is_app_extension
-          #
-          #     unless pod_target.should_build?
-          #       add_resource_bundles_to_native_target(pod_target, aggregate_target.native_target)
-          #       add_pod_target_test_dependencies(pod_target, frameworks_group)
-          #       next
-          #     end
-          #
-          #     aggregate_target.native_target.add_dependency(pod_target.native_target)
-          #     configure_app_extension_api_only_for_target(pod_target) if is_app_extension
-          #
-          #     add_dependent_targets_to_native_target(pod_target.dependent_targets,
-          #                                            pod_target.native_target, is_app_extension,
-          #                                            pod_target.requires_frameworks? && !pod_target.static_framework?,
-          #                                            frameworks_group)
-          #     unless pod_target.static_framework?
-          #       add_pod_target_test_dependencies(pod_target, frameworks_group)
-          #     end
-          #   end
-          # end
-          # # Wire up remaining pod targets used only by tests and are not used by any aggregate target.
-          # test_only_pod_targets.each do |pod_target|
-          #   unless pod_target.should_build?
-          #     add_pod_target_test_dependencies(pod_target, frameworks_group)
-          #     next
-          #   end
-          #   unless pod_target.static_framework?
-          #     add_dependent_targets_to_native_target(pod_target.dependent_targets,
-          #                                            pod_target.native_target, false,
-          #                                            pod_target.requires_frameworks?, frameworks_group)
-          #     add_pod_target_test_dependencies(pod_target, frameworks_group)
-          #   end
-          # end
+          frameworks_group = project.frameworks_group
+          test_only_pod_targets = pod_targets.dup
+          aggregate_targets.each do |aggregate_target|
+            is_app_extension = !(aggregate_target.user_targets.map(&:symbol_type) &
+                                 [:app_extension, :watch_extension, :watch2_extension, :tv_extension, :messages_extension]).empty?
+            is_app_extension ||= aggregate_target.user_targets.any? { |ut| ut.common_resolved_build_setting('APPLICATION_EXTENSION_API_ONLY') == 'YES' }
+
+            aggregate_target.pod_targets.each do |pod_target|
+              test_only_pod_targets.delete(pod_target)
+              configure_app_extension_api_only_for_target(aggregate_target) if is_app_extension
+
+              unless pod_target.should_build?
+                add_resource_bundles_to_native_target(pod_target, aggregate_target.native_target)
+                add_pod_target_test_dependencies(pod_target, frameworks_group)
+                next
+              end
+
+              aggregate_target.native_target.add_dependency(pod_target.native_target)
+              configure_app_extension_api_only_for_target(pod_target) if is_app_extension
+
+              add_dependent_targets_to_native_target(pod_target.dependent_targets,
+                                                     pod_target.native_target, is_app_extension,
+                                                     pod_target.requires_frameworks? && !pod_target.static_framework?,
+                                                     frameworks_group)
+              unless pod_target.static_framework?
+                add_pod_target_test_dependencies(pod_target, frameworks_group)
+              end
+            end
+          end
+          # Wire up remaining pod targets used only by tests and are not used by any aggregate target.
+          test_only_pod_targets.each do |pod_target|
+            unless pod_target.should_build?
+              add_pod_target_test_dependencies(pod_target, frameworks_group)
+              next
+            end
+            unless pod_target.static_framework?
+              add_dependent_targets_to_native_target(pod_target.dependent_targets,
+                                                     pod_target.native_target, false,
+                                                     pod_target.requires_frameworks?, frameworks_group)
+              add_pod_target_test_dependencies(pod_target, frameworks_group)
+            end
+          end
         end
 
         # @param  [String] pod The root name of the development pod.

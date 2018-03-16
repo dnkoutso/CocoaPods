@@ -2,7 +2,7 @@ module Pod
   class Installer
     class Xcode
       class TargetInstallationResult
-        # @return [Target] the target the installation happened for
+        # @return [Target] the target installation happened for.
         #
         attr_reader :target
 
