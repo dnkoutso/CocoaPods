@@ -120,13 +120,6 @@ module Pod
 
     #-------------------------------------------------------------------------#
 
-    # @return [PBXNativeTarget] the target generated in the Pods project for
-    #         this library.
-    #
-    attr_accessor :native_target
-
-    #-------------------------------------------------------------------------#
-
     # @!group Support files
 
     # @return [Pathname] the folder where to store the support files of this

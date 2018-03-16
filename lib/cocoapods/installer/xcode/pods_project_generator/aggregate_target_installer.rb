@@ -8,14 +8,14 @@ module Pod
         class AggregateTargetInstaller < TargetInstaller
           # Creates the target in the Pods project and the relative support files.
           #
-          # @return [void]
+          # @return [TargetInstallationResult] the bla bla shit
           #
           def install!
             UI.message "- Installing target `#{target.name}` #{target.platform}" do
-              add_target
+              native_target = add_target
               create_support_files_dir
               create_support_files_group
-              create_xcconfig_file
+              create_xcconfig_file(native_target)
               if target.requires_frameworks?
                 create_info_plist_file(target.info_plist_path, native_target, target.version, target.platform)
                 create_module_map
@@ -34,7 +34,9 @@ module Pod
               create_bridge_support_file
               create_copy_resources_script
               create_acknowledgements
-              create_dummy_source
+              create_dummy_source(native_target)
+
+              return TargetInstallationResult.new(target, native_target)
             end
           end
 
@@ -89,7 +91,7 @@ module Pod
           #
           # @return [void]
           #
-          def create_xcconfig_file
+          def create_xcconfig_file(native_target)
             native_target.build_configurations.each do |configuration|
               path = target.xcconfig_path(configuration.name)
               gen = Generator::XCConfig::AggregateXCConfig.new(target, configuration.name)
