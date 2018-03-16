@@ -174,19 +174,72 @@ module Pod
     private
 
     def create_generator
-      Xcode::PodsProjectGenerator.new(aggregate_targets, sandbox, pod_targets, analysis_result, installation_options, config)
+      Xcode::PodsProjectGenerator.new(sandbox, aggregate_targets, pod_targets, analysis_result, config.podfile_path)
     end
 
     # Generate the 'Pods/Pods.xcodeproj' project.
     #
     def generate_pods_project(generator = create_generator)
       UI.section 'Generating Pods project' do
-        generator.generate!
-        @pods_project = generator.project
+        @pods_project = generator.generate
+        sandbox.project = @pods_project
         run_podfile_post_install_hooks
-        generator.write
-        generator.share_development_pod_schemes
+        write_pods_project(@pods_project)
+        share_development_pod_schemes(@pods_project)
         write_lockfiles
+      end
+    end
+
+    def write_pods_project(project)
+      UI.message "- Writing Xcode project file to #{UI.path sandbox.project_path}" do
+        project.pods.remove_from_project if project.pods.empty?
+        project.development_pods.remove_from_project if project.development_pods.empty?
+        project.sort(:groups_position => :below)
+        if installation_options.deterministic_uuids?
+          UI.message('- Generating deterministic UUIDs') { project.predictabilize_uuids }
+        end
+        library_product_types = [:framework, :dynamic_library, :static_library]
+        project.recreate_user_schemes(false) do |scheme, target|
+          next unless library_product_types.include? target.symbol_type
+          pod_target = pod_targets.find { |pt| pt.native_target == target }
+          next if pod_target.nil? || pod_target.test_native_targets.empty?
+          pod_target.test_native_targets.each { |test_native_target| scheme.add_test_target(test_native_target) }
+        end
+        project.save
+      end
+    end
+
+    # Shares schemes of development Pods.
+    #
+    # @return [void]
+    #
+    def share_development_pod_schemes(project)
+      development_pod_targets.select(&:should_build?).each do |pod_target|
+        next unless share_scheme_for_development_pod?(pod_target.pod_name)
+        Xcodeproj::XCScheme.share_scheme(project.path, pod_target.label)
+        if pod_target.contains_test_specifications?
+          pod_target.supported_test_types.each do |test_type|
+            Xcodeproj::XCScheme.share_scheme(project.path, pod_target.test_target_label(test_type))
+          end
+        end
+      end
+    end
+
+    # @param  [String] pod_name The root name of the development pod.
+    #
+    # @return [Bool] whether the scheme for the given development pod should be
+    #         shared.
+    #
+    def share_scheme_for_development_pod?(pod_name)
+      case dev_pods_to_share = installation_options.share_schemes_for_development_pods
+        when TrueClass, FalseClass, NilClass
+          dev_pods_to_share
+        when Array
+          dev_pods_to_share.any? { |dev_pod| dev_pod === pod_name } # rubocop:disable Style/CaseEquality
+        else
+          raise Informative, 'Unable to handle share_schemes_for_development_pods ' \
+              "being set to #{dev_pods_to_share.inspect} -- please set it to true, " \
+              'false, or an array of pods to share schemes for.'
       end
     end
 

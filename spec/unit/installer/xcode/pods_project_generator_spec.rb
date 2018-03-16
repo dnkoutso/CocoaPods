@@ -57,30 +57,30 @@ module Pod
 
           describe '#prepare' do
             before do
-              @generator.send(:prepare)
+              @project = @generator.send(:prepare)
             end
 
             it "creates build configurations for all of the user's targets" do
-              @generator.project.build_configurations.map(&:name).sort.should == ['App Store', 'Debug', 'Release', 'Test']
+              @project.build_configurations.map(&:name).sort.should == ['App Store', 'Debug', 'Release', 'Test']
             end
 
             it 'sets STRIP_INSTALLED_PRODUCT to NO for all configurations for the whole project' do
-              @generator.project.build_settings('Debug')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
-              @generator.project.build_settings('Test')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
-              @generator.project.build_settings('Release')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
-              @generator.project.build_settings('App Store')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
+              @project.build_settings('Debug')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
+              @project.build_settings('Test')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
+              @project.build_settings('Release')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
+              @project.build_settings('App Store')['STRIP_INSTALLED_PRODUCT'].should == 'NO'
             end
 
             it 'sets the SYMROOT to the default value for all configurations for the whole project' do
-              @generator.project.build_settings('Debug')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
-              @generator.project.build_settings('Test')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
-              @generator.project.build_settings('Release')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
-              @generator.project.build_settings('App Store')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
+              @project.build_settings('Debug')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
+              @project.build_settings('Test')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
+              @project.build_settings('Release')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
+              @project.build_settings('App Store')['SYMROOT'].should == Pod::Project::LEGACY_BUILD_ROOT
             end
 
             it 'creates the Pods project' do
-              @generator.send(:prepare)
-              @generator.project.class.should == Pod::Project
+              project = @generator.send(:prepare)
+              project.class.should == Pod::Project
             end
 
             it 'preserves Pod paths specified as absolute or rooted to home' do
@@ -88,15 +88,15 @@ module Pod
               local_installer = Pod::Installer.new(config.sandbox, local_podfile)
               local_installer.send(:analyze)
               local_generator = local_installer.send(:create_generator)
-              local_generator.send(:prepare)
-              group = local_generator.project.group_for_spec('Reachability')
+              project = local_generator.send(:prepare)
+              group = project.group_for_spec('Reachability')
               Pathname.new(group.path).should.be.absolute
             end
 
             it 'adds the Podfile to the Pods project' do
-              config.stubs(:podfile_path).returns(Pathname.new('/Podfile'))
-              @generator.send(:prepare)
-              @generator.project['Podfile'].should.be.not.nil
+              @generator.stubs(:podfile_path).returns(Pathname.new('/Podfile'))
+              project = @generator.send(:prepare)
+              project['Podfile'].should.be.not.nil
             end
 
             it 'sets the deployment target for the whole project' do
@@ -106,8 +106,8 @@ module Pod
               aggregate_target_ios = AggregateTarget.new(config.sandbox, false, {}, [], target_definition_ios, config.sandbox.root.dirname, nil, nil, [])
               @generator.stubs(:aggregate_targets).returns([aggregate_target_osx, aggregate_target_ios])
               @generator.stubs(:pod_targets).returns([])
-              @generator.send(:prepare)
-              build_settings = @generator.project.build_configurations.map(&:build_settings)
+              project = @generator.send(:prepare)
+              build_settings = project.build_configurations.map(&:build_settings)
               build_settings.each do |build_setting|
                 build_setting['MACOSX_DEPLOYMENT_TARGET'].should == '10.8'
                 build_setting['IPHONEOS_DEPLOYMENT_TARGET'].should == '6.0'
@@ -121,7 +121,7 @@ module Pod
             it 'installs the file references' do
               @generator.stubs(:pod_targets).returns([])
               PodsProjectGenerator::FileReferencesInstaller.any_instance.expects(:install!)
-              @generator.send(:install_file_references)
+              @generator.generate
             end
           end
 
@@ -172,7 +172,7 @@ module Pod
               mock_configuration = mock('buildconfiguration', :build_settings => build_settings)
               @mock_target.stubs(:build_configurations).returns([mock_configuration])
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
 
               build_settings.should == { 'APPLICATION_EXTENSION_API_ONLY' => 'YES' }
             end
@@ -186,8 +186,8 @@ module Pod
 
               @mock_target = mock('PodNativeTarget')
 
-              mock_project = mock('PodsProject', :frameworks_group => mock('FrameworksGroup'))
-              @generator.stubs(:project).returns(mock_project)
+              @mock_project = mock('PodsProject', :frameworks_group => mock('FrameworksGroup'))
+              @generator.stubs(:generate).returns(@mock_project)
 
               @target.stubs(:native_target).returns(@mock_target)
               @target.stubs(:pod_targets).returns([@pod_target])
@@ -199,7 +199,7 @@ module Pod
               @pod_target.stubs(:should_build? => false)
               @mock_target.expects(:add_dependency).with('dummy')
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'configures APPLICATION_EXTENSION_API_ONLY for app extension targets' do
@@ -231,7 +231,7 @@ module Pod
               mock_configuration = mock('BuildConfiguration', :build_settings => build_settings)
               @mock_target.stubs(:build_configurations).returns([mock_configuration])
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
 
               build_settings.should == { 'APPLICATION_EXTENSION_API_ONLY' => 'YES' }
             end
@@ -244,7 +244,7 @@ module Pod
                 @target.stubs(:native_target).returns(nil)
                 @target.stubs(:pod_targets).returns([])
 
-                @generator.send(:set_target_dependencies)
+                @generator.send(:set_target_dependencies, @mock_project)
               end.should.not.raise NoMethodError
             end
           end
@@ -261,8 +261,8 @@ module Pod
 
               @mock_target = mock('PodNativeTarget')
 
-              mock_project = mock('PodsProject', :frameworks_group => mock('FrameworksGroup'))
-              @generator.stubs(:project).returns(mock_project)
+              @mock_project = mock('PodsProject', :frameworks_group => mock('FrameworksGroup'))
+              @generator.stubs(:generate).returns(@mock_project)
 
               @target.stubs(:native_target).returns(@mock_target)
               @target.stubs(:pod_targets).returns([@pod_target])
@@ -297,7 +297,7 @@ module Pod
               mock_test_native_target.expects(:add_dependency).with(test_dependent_native_target)
               mock_test_native_target.expects(:add_dependency).with(mock_native_target)
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'adds all test dependent targets to test native targets for static frameworks' do
@@ -317,7 +317,7 @@ module Pod
               mock_native_target.expects(:add_dependency).with(dependent_native_target)
               mock_native_target.expects(:add_dependency).with(mock_native_target).never
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'adds dependencies to pod targets that are not part of any aggregate target' do
@@ -341,7 +341,7 @@ module Pod
               mock_test_native_target.expects(:add_dependency).with(dependent_native_target)
               mock_test_native_target.expects(:add_dependency).with(mock_native_target)
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'adds test dependencies to test native targets for a pod target that should not be built' do
@@ -356,7 +356,7 @@ module Pod
 
               mock_test_native_target.expects(:add_dependency).with(test_dependent_native_target)
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'sets resource bundles for not build pods as target dependencies of the test target' do
@@ -370,12 +370,12 @@ module Pod
               @mock_target.expects(:add_dependency).with('dummy')
               mock_test_native_target.expects(:add_dependency).with('dummy')
 
-              @generator.send(:set_target_dependencies)
+              @generator.send(:set_target_dependencies, @mock_project)
             end
 
             it 'sets the app host dependency target to the test native target if test spec requires app host' do
               mock_app_host_target = mock(:name => 'AppHost-iOS-Unit-Tests')
-              @generator.project.stubs(:targets).returns([mock_app_host_target])
+              @mock_project.stubs(:targets).returns([mock_app_host_target])
 
               mock_test_native_target = mock('CoconutLib-Unit-Tests', :symbol_type => :unit_test_bundle)
               test_dependent_native_target = mock('TestDependentNativeTarget')
@@ -390,157 +390,7 @@ module Pod
               mock_test_native_target.expects(:add_dependency).with(test_dependent_native_target)
               mock_test_native_target.expects(:add_dependency).with(mock_app_host_target)
 
-              @generator.send(:set_target_dependencies)
-            end
-          end
-
-          #--------------------------------------#
-
-          describe '#write' do
-            before do
-              @generator.stubs(:aggregate_targets).returns([])
-              @generator.stubs(:analysis_result).returns(stub(:all_user_build_configurations => {}, :target_inspections => nil))
-              @generator.send(:prepare)
-            end
-
-            it 'recursively sorts the project' do
-              Xcodeproj::Project.any_instance.stubs(:recreate_user_schemes)
-              @generator.project.main_group.expects(:sort)
-              @generator.send(:write)
-            end
-
-            it 'saves the project to the given path' do
-              Xcodeproj::Project.any_instance.stubs(:recreate_user_schemes)
-              temporary_directory + 'Pods/Pods.xcodeproj'
-              @generator.project.expects(:save)
-              @generator.send(:write)
-            end
-
-            it "uses the user project's object version for the pods project" do
-              tmp_directory = Pathname(Dir.tmpdir) + 'CocoaPods'
-              FileUtils.mkdir_p(tmp_directory)
-              proj = Xcodeproj::Project.new(tmp_directory + 'Yolo.xcodeproj', false, 1)
-              proj.save
-
-              aggregate_target = AggregateTarget.new(config.sandbox, false, {}, [], fixture_target_definition, config.sandbox.root.dirname, proj, nil, [])
-              @generator.stubs(:aggregate_targets).returns([aggregate_target])
-
-              @generator.send(:prepare)
-              @generator.project.object_version.should == '1'
-
-              FileUtils.rm_rf(tmp_directory)
-            end
-
-            describe 'sharing schemes of development pods' do
-              before do
-                spec = fixture_spec('banana-lib/BananaLib.podspec')
-                pod_target = fixture_pod_target(spec)
-
-                @generator.stubs(:pod_targets).returns([pod_target])
-                @generator.sandbox.stubs(:development_pods).returns('BananaLib' => fixture('BananaLib'))
-              end
-
-              it 'does not share by default' do
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'can share all schemes' do
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(true)
-
-                Xcodeproj::XCScheme.expects(:share_scheme).with(
-                  @generator.project.path,
-                  'BananaLib')
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'shares test schemes' do
-                spec = fixture_spec('coconut-lib/CoconutLib.podspec')
-                target_definition = Podfile::TargetDefinition.new(:default, @installer.podfile.root_target_definitions.first)
-                pod_target = Pod::PodTarget.new(config.sandbox, false, {}, [], [spec, *spec.recursive_subspecs], [target_definition], nil)
-                pod_target.stubs(:should_build?).returns(true)
-
-                @generator.installation_options.
-                    stubs(:share_schemes_for_development_pods).
-                    returns(true)
-
-                @generator.stubs(:pod_targets).returns([pod_target])
-                @generator.sandbox.stubs(:development_pods).returns('CoconutLib' => fixture('CoconutLib'))
-
-                Xcodeproj::XCScheme.expects(:share_scheme).with(
-                  @generator.project.path,
-                  'CoconutLib')
-
-                Xcodeproj::XCScheme.expects(:share_scheme).with(
-                  @generator.project.path,
-                  'CoconutLib-Unit-Tests')
-
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'allows opting out' do
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(false)
-
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                @generator.send(:share_development_pod_schemes)
-
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(nil)
-
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'allows specifying strings of pods to share' do
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(%w(BananaLib))
-
-                Xcodeproj::XCScheme.expects(:share_scheme).with(
-                  @generator.project.path,
-                  'BananaLib')
-                @generator.send(:share_development_pod_schemes)
-
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(%w(orange-framework))
-
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'allows specifying regular expressions of pods to share' do
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns([/bAnaNalIb/i, /B*/])
-
-                Xcodeproj::XCScheme.expects(:share_scheme).with(
-                  @generator.project.path,
-                  'BananaLib')
-                @generator.send(:share_development_pod_schemes)
-
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns([/banana$/, /[^\A]BananaLib/])
-
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                @generator.send(:share_development_pod_schemes)
-              end
-
-              it 'raises when an invalid type is set' do
-                @generator.installation_options.
-                  stubs(:share_schemes_for_development_pods).
-                  returns(Pathname('foo'))
-
-                Xcodeproj::XCScheme.expects(:share_scheme).never
-                e = should.raise(Informative) { @generator.send(:share_development_pod_schemes) }
-                e.message.should.match /share_schemes_for_development_pods.*set it to true, false, or an array of pods to share schemes for/
-              end
+              @generator.send(:set_target_dependencies, @mock_project)
             end
           end
         end

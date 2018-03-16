@@ -10,19 +10,15 @@ module Pod
         require 'cocoapods/installer/xcode/pods_project_generator/file_references_installer'
         require 'cocoapods/installer/xcode/pods_project_generator/aggregate_target_installer'
 
-        # @return [Pod::Project] the `Pods/Pods.xcodeproj` project.
+        # @return [Sandbox] The sandbox where the Pods should be installed.
         #
-        attr_reader :project
+        attr_reader :sandbox
 
         # @return [Array<AggregateTarget>] The model representations of an
         #         aggregation of pod targets generated for a target definition
         #         in the Podfile.
         #
         attr_reader :aggregate_targets
-
-        # @return [Sandbox] The sandbox where the Pods should be installed.
-        #
-        attr_reader :sandbox
 
         # @return [Array<PodTarget>] The model representations of pod targets.
         #
@@ -33,119 +29,75 @@ module Pod
         #
         attr_reader :analysis_result
 
-        # @return [InstallationOptions] the installation options from the Podfile.
+        # @return [Pathname] the path to the podfile which may be `nil` if in an in-memory Podfile is used.
         #
-        attr_reader :installation_options
-
-        # @return [Config] the global CocoaPods configuration.
-        #
-        attr_reader :config
+        attr_reader :podfile_path
 
         # Initialize a new instance
         #
-        # @param  [Array<AggregateTarget>] aggregate_targets     @see #aggregate_targets
         # @param  [Sandbox]                sandbox               @see #sandbox
+        # @param  [Array<AggregateTarget>] aggregate_targets     @see #aggregate_targets
         # @param  [Array<PodTarget>]       pod_targets           @see #pod_targets
         # @param  [Analyzer]               analysis_result       @see #analysis_result
-        # @param  [InstallationOptions]    installation_options  @see #installation_options
-        # @param  [Config]                 config                @see #config
+        # @param  [Pathname]               podfile_path          @see #podfile_path
         #
-        def initialize(aggregate_targets, sandbox, pod_targets, analysis_result, installation_options, config)
-          @aggregate_targets = aggregate_targets
+        def initialize(sandbox, aggregate_targets, pod_targets, analysis_result, podfile_path)
           @sandbox = sandbox
+          @aggregate_targets = aggregate_targets
           @pod_targets = pod_targets
           @analysis_result = analysis_result
-          @installation_options = installation_options
-          @config = config
+          @podfile_path = podfile_path
         end
 
-        def generate!
-          prepare
-          install_file_references
+        def generate
+          project = prepare
+          install_file_references(project)
           install_libraries
           integrate_targets
-          set_target_dependencies
-        end
-
-        def write
-          UI.message "- Writing Xcode project file to #{UI.path sandbox.project_path}" do
-            project.pods.remove_from_project if project.pods.empty?
-            project.development_pods.remove_from_project if project.development_pods.empty?
-            project.sort(:groups_position => :below)
-            if installation_options.deterministic_uuids?
-              UI.message('- Generating deterministic UUIDs') { project.predictabilize_uuids }
-            end
-            library_product_types = [:framework, :dynamic_library, :static_library]
-            project.recreate_user_schemes(false) do |scheme, target|
-              next unless library_product_types.include? target.symbol_type
-              pod_target = pod_targets.find { |pt| pt.native_target == target }
-              next if pod_target.nil? || pod_target.test_native_targets.empty?
-              pod_target.test_native_targets.each { |test_native_target| scheme.add_test_target(test_native_target) }
-            end
-            project.save
-          end
-        end
-
-        # Shares schemes of development Pods.
-        #
-        # @return [void]
-        #
-        def share_development_pod_schemes
-          development_pod_targets.select(&:should_build?).each do |pod_target|
-            next unless share_scheme_for_development_pod?(pod_target.pod_name)
-            Xcodeproj::XCScheme.share_scheme(project.path, pod_target.label)
-            if pod_target.contains_test_specifications?
-              pod_target.supported_test_types.each do |test_type|
-                Xcodeproj::XCScheme.share_scheme(project.path, pod_target.test_target_label(test_type))
-              end
-            end
-          end
+          set_target_dependencies(project)
+          project
         end
 
         private
 
-        def create_project
-          if object_version = aggregate_targets.map(&:user_project).compact.map { |p| p.object_version.to_i }.min
-            Pod::Project.new(sandbox.project_path, false, object_version)
-          else
-            Pod::Project.new(sandbox.project_path)
-          end
-        end
-
         # Creates the Pods project from scratch if it doesn't exists.
         #
-        # @return [void]
+        # @return [Xcodeproj::Project] the project that was generated with most of the default settings set.
         #
         # @todo   Clean and modify the project if it exists.
         #
         def prepare
           UI.message '- Creating Pods project' do
-            @project = create_project
+            project = if object_version = aggregate_targets.map(&:user_project).compact.map {|p| p.object_version.to_i}.min
+                        Pod::Project.new(sandbox.project_path, false, object_version)
+                      else
+                        Pod::Project.new(sandbox.project_path)
+                      end
             analysis_result.all_user_build_configurations.each do |name, type|
-              @project.add_build_configuration(name, type)
+              project.add_build_configuration(name, type)
             end
             # Reset symroot just in case the user has added a new build configuration other than 'Debug' or 'Release'.
-            @project.symroot = Pod::Project::LEGACY_BUILD_ROOT
+            project.symroot = Pod::Project::LEGACY_BUILD_ROOT
 
             pod_names = pod_targets.map(&:pod_name).uniq
             pod_names.each do |pod_name|
               local = sandbox.local?(pod_name)
               path = sandbox.pod_dir(pod_name)
               was_absolute = sandbox.local_path_was_absolute?(pod_name)
-              @project.add_pod_group(pod_name, path, local, was_absolute)
+              project.add_pod_group(pod_name, path, local, was_absolute)
             end
 
-            if config.podfile_path
-              @project.add_podfile(config.podfile_path)
+            if podfile_path
+              project.add_podfile(podfile_path)
             end
 
-            sandbox.project = @project
+            sandbox.project = project
             platforms = aggregate_targets.map(&:platform)
             osx_deployment_target = platforms.select { |p| p.name == :osx }.map(&:deployment_target).min
             ios_deployment_target = platforms.select { |p| p.name == :ios }.map(&:deployment_target).min
             watchos_deployment_target = platforms.select { |p| p.name == :watchos }.map(&:deployment_target).min
             tvos_deployment_target = platforms.select { |p| p.name == :tvos }.map(&:deployment_target).min
-            @project.build_configurations.each do |build_configuration|
+            project.build_configurations.each do |build_configuration|
               build_configuration.build_settings['MACOSX_DEPLOYMENT_TARGET'] = osx_deployment_target.to_s if osx_deployment_target
               build_configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = ios_deployment_target.to_s if ios_deployment_target
               build_configuration.build_settings['WATCHOS_DEPLOYMENT_TARGET'] = watchos_deployment_target.to_s if watchos_deployment_target
@@ -155,10 +107,12 @@ module Pod
               build_configuration.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
               build_configuration.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
             end
+
+            return project
           end
         end
 
-        def install_file_references
+        def install_file_references(project)
           installer = FileReferencesInstaller.new(sandbox, pod_targets, project)
           installer.install!
         end
@@ -214,7 +168,7 @@ module Pod
         #
         # @return [void]
         #
-        def set_target_dependencies
+        def set_target_dependencies(project)
           frameworks_group = project.frameworks_group
           test_only_pod_targets = pod_targets.dup
           aggregate_targets.each do |aggregate_target|
@@ -228,7 +182,7 @@ module Pod
 
               unless pod_target.should_build?
                 add_resource_bundles_to_native_target(pod_target, aggregate_target.native_target)
-                add_pod_target_test_dependencies(pod_target, frameworks_group)
+                add_pod_target_test_dependencies(project, pod_target, frameworks_group)
                 next
               end
 
@@ -240,49 +194,22 @@ module Pod
                                                      pod_target.requires_frameworks? && !pod_target.static_framework?,
                                                      frameworks_group)
               unless pod_target.static_framework?
-                add_pod_target_test_dependencies(pod_target, frameworks_group)
+                add_pod_target_test_dependencies(project, pod_target, frameworks_group)
               end
             end
           end
           # Wire up remaining pod targets used only by tests and are not used by any aggregate target.
           test_only_pod_targets.each do |pod_target|
             unless pod_target.should_build?
-              add_pod_target_test_dependencies(pod_target, frameworks_group)
+              add_pod_target_test_dependencies(project, pod_target, frameworks_group)
               next
             end
             unless pod_target.static_framework?
               add_dependent_targets_to_native_target(pod_target.dependent_targets,
                                                      pod_target.native_target, false,
                                                      pod_target.requires_frameworks?, frameworks_group)
-              add_pod_target_test_dependencies(pod_target, frameworks_group)
+              add_pod_target_test_dependencies(project, pod_target, frameworks_group)
             end
-          end
-        end
-
-        # @param  [String] pod The root name of the development pod.
-        #
-        # @return [Bool] whether the scheme for the given development pod should be
-        #         shared.
-        #
-        def share_scheme_for_development_pod?(pod)
-          case dev_pods_to_share = installation_options.share_schemes_for_development_pods
-          when TrueClass, FalseClass, NilClass
-            dev_pods_to_share
-          when Array
-            dev_pods_to_share.any? { |dev_pod| dev_pod === pod } # rubocop:disable Style/CaseEquality
-          else
-            raise Informative, 'Unable to handle share_schemes_for_development_pods ' \
-              "being set to #{dev_pods_to_share.inspect} -- please set it to true, " \
-              'false, or an array of pods to share schemes for.'
-          end
-        end
-
-        # @return [Array<Library>] The targets of the development pods generated by
-        #         the installation process.
-        #
-        def development_pod_targets
-          pod_targets.select do |pod_target|
-            sandbox.local?(pod_target.pod_name)
           end
         end
 
@@ -292,7 +219,7 @@ module Pod
 
         private
 
-        def add_pod_target_test_dependencies(pod_target, frameworks_group)
+        def add_pod_target_test_dependencies(project, pod_target, frameworks_group)
           test_dependent_targets = pod_target.all_dependent_targets
           pod_target.test_specs_by_native_target.each do |test_native_target, test_specs|
             test_dependent_targets.reject(&:should_build?).each do |test_dependent_target|
