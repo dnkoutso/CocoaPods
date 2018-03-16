@@ -79,8 +79,7 @@ module Pod
             end
 
             it 'creates the Pods project' do
-              project = @generator.send(:prepare)
-              project.class.should == Pod::Project
+              @project.class.should == Pod::Project
             end
 
             it 'preserves Pod paths specified as absolute or rooted to home' do
@@ -112,6 +111,21 @@ module Pod
                 build_setting['MACOSX_DEPLOYMENT_TARGET'].should == '10.8'
                 build_setting['IPHONEOS_DEPLOYMENT_TARGET'].should == '6.0'
               end
+            end
+
+            it "uses the user project's object version for the pods project" do
+              tmp_directory = Pathname(Dir.tmpdir) + 'CocoaPods'
+              FileUtils.mkdir_p(tmp_directory)
+              proj = Xcodeproj::Project.new(tmp_directory + 'Yolo.xcodeproj', false, 1)
+              proj.save
+
+              aggregate_target = AggregateTarget.new(config.sandbox, false, {}, [], fixture_target_definition, config.sandbox.root.dirname, proj, nil, [])
+              @generator.stubs(:aggregate_targets).returns([aggregate_target])
+
+              project = @generator.send(:prepare)
+              project.object_version.should == '1'
+
+              FileUtils.rm_rf(tmp_directory)
             end
           end
 

@@ -69,7 +69,8 @@ module Pod
         @installer.stubs(:perform_post_install_actions)
         @installer.stubs(:share_development_pod_schemes)
         @installer.stubs(:write_pods_project)
-        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:generate)
+        project = stub
+        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:generate).returns(project)
       end
 
       it 'in runs the pre-install hooks before cleaning the Pod sources' do
@@ -100,6 +101,17 @@ module Pod
         @installer.expects(:write_pods_project).once.in_sequence(hooks)
 
         @installer.install!
+      end
+
+      describe 'pods project generation' do
+        it 'shit' do
+          @installer.unstub(:generate_pods_project)
+          @installer.stubs(:aggregate_targets).returns([])
+          @installer.install!
+          Xcodeproj::Project.any_instance.stubs(:recreate_user_schemes)
+          @installer.pods_project.main_group.expects(:sort)
+          @generator.send(:write)
+        end
       end
 
       describe 'handling spec sources' do
