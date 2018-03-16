@@ -67,9 +67,9 @@ module Pod
         @installer.stubs(:run_plugins_post_install_hooks)
         @installer.stubs(:ensure_plugins_are_installed!)
         @installer.stubs(:perform_post_install_actions)
-        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:share_development_pod_schemes)
-        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:generate!)
-        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:write)
+        @installer.stubs(:share_development_pod_schemes)
+        @installer.stubs(:write_pods_project)
+        Installer::Xcode::PodsProjectGenerator.any_instance.stubs(:generate)
       end
 
       it 'in runs the pre-install hooks before cleaning the Pod sources' do
@@ -93,12 +93,11 @@ module Pod
         @installer.unstub(:generate_pods_project)
         generator = @installer.send(:create_generator)
         @installer.stubs(:create_generator).returns(generator)
-        generator.stubs(:generate!)
-        generator.stubs(:share_development_pod_schemes)
+        generator.stubs(:generate)
 
         hooks = sequence('hooks')
         @installer.expects(:run_podfile_post_install_hooks).once.in_sequence(hooks)
-        generator.expects(:write).once.in_sequence(hooks)
+        @installer.expects(:write_pods_project).once.in_sequence(hooks)
 
         @installer.install!
       end
