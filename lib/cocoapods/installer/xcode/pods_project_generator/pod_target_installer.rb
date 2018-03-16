@@ -51,13 +51,14 @@ module Pod
                 create_umbrella_header do |generator|
                   file_accessors = target.file_accessors
                   file_accessors = file_accessors.reject { |f| f.spec.test_specification? } if target.contains_test_specifications?
-                  generator.imports += if header_mappings_dir
+                  umbrella_header_imports = if header_mappings_dir
                                          file_accessors.flat_map(&:public_headers).map do |pathname|
                                            pathname.relative_path_from(header_mappings_dir)
                                          end
                                        else
                                          file_accessors.flat_map(&:public_headers).map(&:basename)
-                                      end
+                                       end
+                  generator.imports.concat(umbrella_header_imports)
                 end
               end
 

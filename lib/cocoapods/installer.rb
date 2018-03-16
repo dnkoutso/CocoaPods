@@ -239,15 +239,13 @@ module Pod
     # @return [void]
     #
     def analyze(analyzer = create_analyzer)
-      analyzer.update = update
       @analysis_result = analyzer.analyze
-      @aggregate_targets = analyzer.result.targets
+      @aggregate_targets = @analysis_result.targets
     end
 
     def create_analyzer(plugin_sources = nil)
-      Analyzer.new(sandbox, podfile, lockfile, plugin_sources).tap do |analyzer|
+      Analyzer.new(sandbox, podfile, lockfile, plugin_sources, has_dependencies?, update).tap do |analyzer|
         analyzer.installation_options = installation_options
-        analyzer.has_dependencies = has_dependencies?
       end
     end
 
