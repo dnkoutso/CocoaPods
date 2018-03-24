@@ -34,12 +34,24 @@ module Pod
       # @return [void]
       #
       def prepare!
-        run_prepare_command
+        if spec.prepare_command
+          UI.section(' > Running prepare command', '', 1) do
+            prompt_for_permission
+            run_prepare_command
+          end
+        end
       end
 
       #-----------------------------------------------------------------------#
 
       private
+
+      def prompt_for_permission
+        UI.puts "To complete installation of `#{spec.name}` the following command must be executed: " \
+          "\n\n - #{spec.prepare_command.strip_heredoc.chomp}" \
+          "\n\nPlease inspect the command and press enter [y/n] if you wish to continue."
+        UI.choose_from_array(['y', 'n'], 'shit?').chomp
+      end
 
       # @!group Preparation Steps
 
@@ -55,18 +67,15 @@ module Pod
       # @return [void]
       #
       def run_prepare_command
-        return unless spec.prepare_command
-        UI.section(' > Running prepare command', '', 1) do
-          Dir.chdir(path) do
-            begin
-              ENV.delete('CDPATH')
-              ENV['COCOAPODS_VERSION'] = Pod::VERSION
-              prepare_command = spec.prepare_command.strip_heredoc.chomp
-              full_command = "\nset -e\n" + prepare_command
-              bash!('-c', full_command)
-            ensure
-              ENV.delete('COCOAPODS_VERSION')
-            end
+        Dir.chdir(path) do
+          begin
+            ENV.delete('CDPATH')
+            ENV['COCOAPODS_VERSION'] = Pod::VERSION
+            prepare_command = spec.prepare_command.strip_heredoc.chomp
+            full_command = "\nset -e\n" + prepare_command
+            bash!('-c', full_command)
+          ensure
+            ENV.delete('COCOAPODS_VERSION')
           end
         end
       end
