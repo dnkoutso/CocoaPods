@@ -50,6 +50,7 @@ module Pod
   autoload :Resolver,                  'cocoapods/resolver'
   autoload :Sandbox,                   'cocoapods/sandbox'
   autoload :Target,                    'cocoapods/target'
+  autoload :TestPodTarget,             'cocoapods/target/test_pod_target'
   autoload :Validator,                 'cocoapods/validator'
 
   module Generator

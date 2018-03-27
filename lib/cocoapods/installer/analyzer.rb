@@ -512,13 +512,16 @@ module Pod
             # we prefer a minimal target as transitive dependency.
             hash[name] = values.sort_by { |pt| pt.specs.count }
           end
+
           pod_targets.each do |target|
             all_specs = all_resolver_specs.to_set
-            dependencies = transitive_dependencies_for_specs(target.non_test_specs.to_set, target.platform, all_specs).group_by(&:root)
-            test_dependencies = transitive_dependencies_for_specs(target.test_specs.to_set, target.platform, all_specs).group_by(&:root)
-            test_dependencies.delete_if { |k| dependencies.key? k }
+            dependencies = transitive_dependencies_for_specs(target.specs.to_set, target.platform, all_specs).group_by(&:root)
             target.dependent_targets = filter_dependencies(dependencies, pod_targets_by_name, target)
-            target.test_dependent_targets = filter_dependencies(test_dependencies, pod_targets_by_name, target)
+            target.test_pod_targets.each do |test_pod_target|
+              test_dependencies = transitive_dependencies_for_specs([test_pod_target.spec], target.platform, all_specs).group_by(&:root)
+              test_dependencies.delete_if { |k| dependencies.key? k }
+              test_pod_target.dependent_targets = filter_dependencies(test_dependencies, pod_targets_by_name, target)
+            end
           end
         else
           dedupe_cache = {}
@@ -530,11 +533,13 @@ module Pod
 
             pod_targets.each do |target|
               all_specs = specs.map(&:spec).to_set
-              dependencies = transitive_dependencies_for_specs(target.non_test_specs.to_set, target.platform, all_specs).group_by(&:root)
-              test_dependencies = transitive_dependencies_for_specs(target.test_specs.to_set, target.platform, all_specs).group_by(&:root)
-              test_dependencies.delete_if { |k| dependencies.key? k }
+              dependencies = transitive_dependencies_for_specs(target.specs.to_set, target.platform, all_specs).group_by(&:root)
               target.dependent_targets = pod_targets.reject { |t| dependencies[t.root_spec].nil? }
-              target.test_dependent_targets = pod_targets.reject { |t| test_dependencies[t.root_spec].nil? }
+              target.test_pod_targets.each do |test_pod_target|
+                test_dependencies = transitive_dependencies_for_specs([test_pod_target.spec], target.platform, all_specs).group_by(&:root)
+                test_dependencies.delete_if { |k| dependencies.key? k }
+                test_pod_target.dependent_targets = pod_targets.reject { |t| test_dependencies[t.root_spec].nil? }
+              end
             end
           end
         end
@@ -592,7 +597,7 @@ module Pod
       # @param  [TargetDefinitions] target_definitions
       #         the aggregate target
       #
-      # @param  [Array<Specification>] pod_specs
+      # @param  [Array<Specification>] specs
       #         the specifications of an equal root.
       #
       # @param  [String] scope_suffix
@@ -600,7 +605,7 @@ module Pod
       #
       # @return [PodTarget]
       #
-      def generate_pod_target(target_definitions, pod_specs, scope_suffix: nil)
+      def generate_pod_target(target_definitions, specs, scope_suffix: nil)
         if installation_options.integrate_targets?
           target_inspections = result.target_inspections.select { |t, _| target_definitions.include?(t) }.values
           user_build_configurations = target_inspections.map(&:build_configurations).reduce({}, &:merge)
@@ -613,7 +618,17 @@ module Pod
           end
         end
 
-        PodTarget.new(sandbox, target_definitions.any?(&:uses_frameworks?), user_build_configurations, archs, pod_specs, target_definitions, scope_suffix)
+        test_specs, non_test_specs = specs.partition(&:test_specification?)
+        host_requires_frameworks = target_definitions.any?(&:uses_frameworks?)
+
+        pod_target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, non_test_specs, target_definitions, scope_suffix)
+
+        test_specs.each do |test_spec|
+          test_pod_target = TestPodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, test_spec, pod_target)
+          pod_target.test_pod_targets << test_pod_target
+        end
+
+        pod_target
       end
 
       # Generates dependencies that require the specific version of the Pods
