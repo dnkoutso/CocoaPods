@@ -3,10 +3,10 @@ require File.expand_path('../../../spec_helper', __FILE__)
 module Pod
   describe PodTarget do
     before do
-      spec = fixture_spec('banana-lib/BananaLib.podspec')
+      @spec = fixture_spec('banana-lib/BananaLib.podspec')
       @target_definition = Podfile::TargetDefinition.new('Pods', nil)
       @target_definition.abstract = false
-      @pod_target = PodTarget.new(config.sandbox, false, {}, [], [spec], [@target_definition], nil)
+      @pod_target = PodTarget.new(config.sandbox, false, {}, [], [@spec], [@target_definition], nil)
       @pod_target.stubs(:platform).returns(Platform.ios)
     end
 
@@ -95,7 +95,7 @@ module Pod
       end
 
       it 'builds a pod target if there are actual source files' do
-        fa = Sandbox::FileAccessor.new(nil, @pod_target)
+        fa = Sandbox::FileAccessor.new(nil, @spec.consumer(:ios))
         fa.stubs(:source_files).returns([Pathname.new('foo.m')])
         @pod_target.stubs(:file_accessors).returns([fa])
 
@@ -103,7 +103,7 @@ module Pod
       end
 
       it 'does not build a pod target if there are only header files' do
-        fa = Sandbox::FileAccessor.new(nil, @pod_target)
+        fa = Sandbox::FileAccessor.new(nil, @spec.consumer(:ios))
         fa.stubs(:source_files).returns([Pathname.new('foo.h')])
         @pod_target.stubs(:file_accessors).returns([fa])
 
@@ -111,7 +111,7 @@ module Pod
       end
 
       it 'builds a pod target if there are no actual source files but there are script phases' do
-        fa = Sandbox::FileAccessor.new(nil, @pod_target)
+        fa = Sandbox::FileAccessor.new(nil, @spec.consumer(:ios))
         fa.stubs(:source_files).returns([Pathname.new('foo.h')])
         @pod_target.stubs(:file_accessors).returns([fa])
         @pod_target.root_spec.script_phase = { :name => 'Hello World', :script => 'echo "Hello World"' }
@@ -502,15 +502,27 @@ module Pod
 
       describe 'framework and resource paths' do
         it 'returns the correct resource paths' do
-          fa = Sandbox::FileAccessor.new(nil, @pod_target)
+          fa = Sandbox::FileAccessor.new(nil, @spec.consumer(:ios))
           fa.stubs(:resource_bundles).returns('ResourceBundle' => [Pathname.new('Model.xcdatamodeld')])
           fa.stubs(:resources).returns([])
           fa.stubs(:spec).returns(stub(:test_specification? => false))
           @pod_target.stubs(:file_accessors).returns([fa])
-          @pod_target.resource_paths.should == ['${PODS_CONFIGURATION_BUILD_DIR}/TestResourceBundle.bundle']
+          @pod_target.resource_paths.should == ['${PODS_CONFIGURATION_BUILD_DIR}/BananaLib/ResourceBundle.bundle']
         end
 
-
+        it 'returns the correct framework paths' do
+          fa = Sandbox::FileAccessor.new(nil, @spec.consumer(:ios))
+          fa.stubs(:vendored_dynamic_artifacts).returns([config.sandbox.root + Pathname.new('Vendored/Vendored.framework')])
+          fa.stubs(:spec).returns(stub(:test_specification? => false))
+          @pod_target.stubs(:file_accessors).returns([fa])
+          @pod_target.stubs(:should_build?).returns(true)
+          @pod_target.framework_paths.should == [
+              { :name => 'Vendored.framework',
+                :input_path => '${PODS_ROOT}/Vendored/Vendored.framework',
+                :output_path => '${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Vendored.framework'
+              }
+          ]
+        end
       end
     end
   end
