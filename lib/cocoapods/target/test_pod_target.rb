@@ -52,7 +52,7 @@ module Pod
       @resource_bundle_targets = []
     end
 
-    # @return [String] the label for the target.
+    # @return [String] the label for this target.
     #
     def label
       "#{pod_target.label}-#{test_type.capitalize}-Tests"
@@ -115,6 +115,13 @@ module Pod
     #
     def prefix_header_path
       support_files_dir + "#{label}-prefix.pch"
+    end
+
+    # @return [Pathname] the folder where to store the support files of this
+    #         library. For test targets this is the same folder as the one used for the parent pod target.
+    #
+    def support_files_dir
+      sandbox.target_support_files_dir(pod_target.name)
     end
 
     # Returns the corresponding native product type to use given the test type.

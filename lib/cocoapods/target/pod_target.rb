@@ -54,6 +54,7 @@ module Pod
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, specs, target_definitions, scope_suffix = nil)
       super(sandbox, host_requires_frameworks, user_build_configurations, archs)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
+      raise "Can't initialize a PodTarget with test specs!" if specs.any?(&:test_specification?)
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions" if target_definitions.all?(&:abstract?)
       raise "Can't initialize a PodTarget with an empty string scope suffix!" if scope_suffix == ''
@@ -194,7 +195,7 @@ module Pod
       return @defines_module = true if uses_swift? || requires_frameworks?
       return @defines_module = true if target_definitions.any? { |td| td.build_pod_as_module?(pod_name) }
 
-      @defines_module = non_test_specs.any? { |s| s.consumer(platform).pod_target_xcconfig['DEFINES_MODULE'] == 'YES' }
+      @defines_module = specs.any? { |s| s.consumer(platform).pod_target_xcconfig['DEFINES_MODULE'] == 'YES' }
     end
 
     # @return [Array<Hash{Symbol=>String}>] An array of hashes where each hash represents a single script phase.
@@ -219,7 +220,7 @@ module Pod
     # @return [Boolean] Whether the target has any tests specifications.
     #
     def contains_test_specifications?
-      !test_specs.empty?
+      !test_pod_targets.empty?
     end
 
     # Returns the framework paths associated with this target. By default all paths include the framework paths
