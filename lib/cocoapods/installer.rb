@@ -306,7 +306,12 @@ module Pod
     #                targets.
     #
     def create_file_accessors
-      sandbox.create_file_accessors(pod_targets)
+      pod_targets.each do |pod_target|
+        create_file_accessors_for_target(pod_target)
+        pod_target.test_pod_targets.each do |test_pod_target|
+          create_file_accessors_for_target(test_pod_target)
+        end
+      end
     end
 
     # Downloads, installs the documentation and cleans the sources of the Pods
@@ -681,6 +686,18 @@ module Pod
     #
     def sandbox_state
       analysis_result.sandbox_state
+    end
+
+    # TODO
+    #
+    def create_file_accessors_for_target(pod_target)
+      pod_root = sandbox.pod_dir(pod_target.pod_name)
+      path_list = Sandbox::PathList.new(pod_root)
+      file_accessors = pod_target.specs.map do |spec|
+        FileAccessor.new(path_list, spec.consumer(pod_target.platform))
+      end
+      pod_target.file_accessors ||= []
+      pod_target.file_accessors.concat(file_accessors)
     end
 
     #-------------------------------------------------------------------------#

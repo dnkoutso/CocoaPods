@@ -21,11 +21,6 @@ module Pod
     #
     attr_accessor :file_accessors
 
-    # @return [PBXNativeTarget] the test target generated in the Pods project for
-    #        this target.
-    #
-    attr_accessor :native_target
-
     # @return [Array<PBXNativeTarget>] the resource bundle targets belonging
     #         to this target.
     #
@@ -55,7 +50,7 @@ module Pod
     # @return [String] the label for this target.
     #
     def label
-      "#{pod_target.label}-#{test_type.capitalize}-Tests"
+      "#{pod_target.label}-#{test_type.capitalize}-#{spec.base_name}"
     end
 
     # @return [Symbol] the test type for this target.
@@ -68,6 +63,18 @@ module Pod
     #
     def platform
       pod_target.platform
+    end
+
+    # @return [String] The name of the Pod that this target refers to.
+    #
+    def pod_name
+      pod_target.pod_name
+    end
+
+    # TODO
+    #
+    def specs
+      [spec]
     end
 
     # @return [Array<PodTarget>] the recursive targets that this target has a
