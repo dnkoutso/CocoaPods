@@ -34,6 +34,15 @@ module Pod
             @target = target
           end
 
+          # Creates the target in the Pods project.
+          #
+          # @return [TargetInstallationResult] the result of the installation of this target.
+          #
+          def install!
+            native_target = add_target
+            TargetInstallationResult.new(target, native_target)
+          end
+
           private
 
           #-----------------------------------------------------------------------#
@@ -235,10 +244,12 @@ module Pod
           #
           def create_dummy_source(native_target)
             path = target.dummy_source_path
-            generator = Generator::DummySource.new(target.label)
-            update_changed_file(generator, path)
-            file_reference = add_file_to_support_group(path)
-            native_target.source_build_phase.add_file_reference(file_reference)
+            UI.message "- Generating dummy source at #{UI.path(path)}" do
+              generator = Generator::DummySource.new(target.label)
+              update_changed_file(generator, path)
+              file_reference = add_file_to_support_group(path)
+              native_target.source_build_phase.add_file_reference(file_reference)
+            end
           end
 
           private

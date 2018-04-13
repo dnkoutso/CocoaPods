@@ -417,15 +417,6 @@ module Pod
       support_files_dir + "#{test_target_label(test_type)}-prefix.pch"
     end
 
-    # @return [Array<String>] The names of the Pods on which this target
-    #         depends.
-    #
-    def dependencies
-      spec_consumers.flat_map do |consumer|
-        consumer.dependencies.map { |dep| Specification.root_name(dep.name) }
-      end.uniq
-    end
-
     # @return [Array<PodTarget>] the recursive targets that this target has a
     #         dependency upon.
     #

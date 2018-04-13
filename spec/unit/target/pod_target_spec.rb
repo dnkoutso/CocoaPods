@@ -67,10 +67,6 @@ module Pod
         @pod_target.scoped.first.resources_bundle_target_label('Fruits').should == 'BananaLib-Pods-Fruits'
       end
 
-      it 'returns the name of the Pods on which this target depends' do
-        @pod_target.dependencies.should == ['monkey']
-      end
-
       it 'returns whether it is whitelisted in a build configuration' do
         @target_definition.store_pod('BananaLib')
         @target_definition.whitelist_pod_for_configuration('BananaLib', 'debug')

@@ -15,7 +15,7 @@ module Pod
           end
 
           it 'adds the architectures to the custom build configurations of the user target' do
-            @installer.send(:add_target).resolved_build_setting('ARCHS').should == {
+            @installer.install!.native_target.resolved_build_setting('ARCHS').should == {
               'Release' => ['$(ARCHS_STANDARD_64_BIT)'],
               'Debug' => ['$(ARCHS_STANDARD_64_BIT)'],
               'AppStore' => ['$(ARCHS_STANDARD_64_BIT)'],
@@ -24,7 +24,7 @@ module Pod
           end
 
           it 'always clears the OTHER_LDFLAGS and OTHER_LIBTOOLFLAGS, because these lib targets do not ever need any' do
-            native_target = @installer.send(:add_target)
+            native_target = @installer.install!.native_target
             native_target.resolved_build_setting('OTHER_LDFLAGS').values.uniq.should == ['']
             native_target.resolved_build_setting('OTHER_LIBTOOLFLAGS').values.uniq.should == ['']
           end
@@ -32,7 +32,7 @@ module Pod
           it 'adds Swift-specific build settings to the build settings' do
             @target.stubs(:requires_frameworks?).returns(true)
             @target.stubs(:uses_swift?).returns(true)
-            @installer.send(:add_target).resolved_build_setting('SWIFT_OPTIMIZATION_LEVEL').should == {
+            @installer.install!.native_target.resolved_build_setting('SWIFT_OPTIMIZATION_LEVEL').should == {
               'Release' => '-Owholemodule',
               'Debug' => '-Onone',
               'Test' => nil,
@@ -43,7 +43,7 @@ module Pod
           it 'verify static framework is building a static library' do
             @target.stubs(:requires_frameworks?).returns(true)
             @target.stubs(:static_framework?).returns(true)
-            @installer.send(:add_target).resolved_build_setting('MACH_O_TYPE').should == {
+            @installer.install!.native_target.resolved_build_setting('MACH_O_TYPE').should == {
               'Release' => 'staticlib',
               'Debug' => 'staticlib',
               'Test' => 'staticlib',
