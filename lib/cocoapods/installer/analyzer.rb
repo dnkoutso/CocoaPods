@@ -33,29 +33,33 @@ module Pod
       #
       attr_reader :lockfile
 
-      # @return [Array<Source>] Sources provided by plugins
+      # @return [PodfileDependencyCache] The PodfileDepshit
       #
-      attr_reader :plugin_sources
+      attr_reader :podfile_dependency_cache
+
+      # @return [Array<Source>] The shit
+      #
+      attr_reader :sources
 
       # Initialize a new instance
       #
-      # @param  [Sandbox]       sandbox           @see #sandbox
-      # @param  [Podfile]       podfile           @see #podfile
-      # @param  [Lockfile]      lockfile          @see #lockfile
-      # @param  [Array<Source>] plugin_sources    @see #plugin_sources
+      # @param  [Sandbox] sandbox @see #sandbox
+      # @param  [Podfile] podfile @see #podfile
+      # @param  [PodfileDependencyCache] podfile_dependency_cache @see #PodfileDependencyCache
+      # @param  [Lockfile] lockfile @see #lockfile
       #
-      def initialize(sandbox, podfile, lockfile = nil, plugin_sources = nil)
+      def initialize(sandbox, podfile, podfile_dependency_cache, sources, lockfile = nil)
         @sandbox  = sandbox
         @podfile  = podfile
         @lockfile = lockfile
-        @plugin_sources = plugin_sources
+        @podfile_dependency_cache = podfile_dependency_cache
+        @sources = sources
 
         @update = false
         @allow_pre_downloads = true
         @has_dependencies = true
         @test_pod_target_analyzer_cache = {}
         @test_pod_target_key = Struct.new(:name, :pod_targets)
-        @podfile_dependency_cache = PodfileDependencyCache.from_podfile(podfile)
         @result = nil
       end
 
@@ -239,21 +243,6 @@ module Pod
           state.added.merge(@podfile_dependency_cache.podfile_dependencies.map(&:root_name))
           state
         end
-      end
-
-      public
-
-      # Updates the git source repositories.
-      #
-      def update_repositories
-        sources.each do |source|
-          if source.git?
-            config.sources_manager.update(source.name, true)
-          else
-            UI.message "Skipping `#{source.name}` update because the repository is not a git source repository."
-          end
-        end
-        @specs_updated = true
       end
 
       private
@@ -882,46 +871,6 @@ module Pod
       #         Pod.
       #
       attr_reader :locked_dependencies
-
-      #-----------------------------------------------------------------------#
-
-      public
-
-      # Returns the sources used to query for specifications
-      #
-      # When no explicit Podfile sources or plugin sources are defined, this
-      # defaults to the master spec repository.
-      # available sources ({config.sources_manager.all}).
-      #
-      # @return [Array<Source>] the sources to be used in finding
-      #         specifications, as specified by the {#podfile} or all sources.
-      #
-      def sources
-        @sources ||= begin
-          sources = podfile.sources
-          plugin_sources = @plugin_sources || []
-
-          # Add any sources specified using the :source flag on individual dependencies.
-          dependency_sources = @podfile_dependency_cache.podfile_dependencies.map(&:podspec_repo).compact
-          all_dependencies_have_sources = dependency_sources.count == @podfile_dependency_cache.podfile_dependencies.count
-
-          if all_dependencies_have_sources
-            sources = dependency_sources
-          elsif has_dependencies? && sources.empty? && plugin_sources.empty?
-            sources = ['https://github.com/CocoaPods/Specs.git']
-          else
-            sources += dependency_sources
-          end
-
-          result = sources.uniq.map do |source_url|
-            config.sources_manager.find_or_create_source_with_url(source_url)
-          end
-          unless plugin_sources.empty?
-            result.insert(0, *plugin_sources)
-          end
-          result
-        end
-      end
 
       #-----------------------------------------------------------------------#
 

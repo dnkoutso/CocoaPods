@@ -143,11 +143,10 @@ module Pod
     # @return [Analyzer] The analyzer used to resolve dependencies
     #
     def resolve_dependencies
-      plugin_sources = run_source_provider_hooks
-      analyzer = create_analyzer(plugin_sources)
+      analyzer = create_analyzer
 
       UI.section 'Updating local specs repositories' do
-        analyzer.update_repositories
+        update_repositories(analyzer.podfile_dependency_cache)
       end if repo_update?
 
       UI.section 'Analyzing dependencies' do
@@ -163,6 +162,54 @@ module Pod
         install_pod_sources
         run_podfile_pre_install_hooks
         clean_pod_sources
+      end
+    end
+
+    # Updates the git source repositories.
+    #
+    def update_repositories(podfile_dependency_cache)
+      sources(podfile_dependency_cache).each do |source|
+        if source.git?
+          config.sources_manager.update(source.name, true)
+        else
+          UI.message "Skipping `#{source.name}` update because the repository is not a git source repository."
+        end
+      end
+    end
+
+    # Returns the sources used to query for specifications
+    #
+    # When no explicit Podfile sources or plugin sources are defined, this
+    # defaults to the master spec repository.
+    # available sources ({config.sources_manager.all}).
+    #
+    # @return [Array<Source>] the sources to be used in finding
+    #         specifications, as specified by the {#podfile} or all sources.
+    #
+    def sources(podfile_dependency_cache)
+      @sources ||= begin
+        sources = podfile.sources
+        plugin_sources = @plugin_sources || []
+
+        # Add any sources specified using the :source flag on individual dependencies.
+        dependency_sources = podfile_dependency_cache.podfile_dependencies.map(&:podspec_repo).compact
+        all_dependencies_have_sources = dependency_sources.count == podfile_dependency_cache.podfile_dependencies.count
+
+        if all_dependencies_have_sources
+          sources = dependency_sources
+        elsif has_dependencies? && sources.empty? && plugin_sources.empty?
+          sources = ['https://github.com/CocoaPods/Specs.git']
+        else
+          sources += dependency_sources
+        end
+
+        result = sources.uniq.map do |source_url|
+          config.sources_manager.find_or_create_source_with_url(source_url)
+        end
+        unless plugin_sources.empty?
+          result.insert(0, *plugin_sources)
+        end
+        result
       end
     end
 
@@ -250,8 +297,9 @@ module Pod
       @aggregate_targets = analyzer.result.targets
     end
 
-    def create_analyzer(plugin_sources = nil)
-      Analyzer.new(sandbox, podfile, lockfile, plugin_sources).tap do |analyzer|
+    def create_analyzer
+      podfile_dependency_cache = Pod::Installer::Analyzer::PodfileDependencyCache.from_podfile(podfile)
+      Analyzer.new(sandbox, podfile, podfile_dependency_cache, sources(podfile_dependency_cache), lockfile).tap do |analyzer|
         analyzer.installation_options = installation_options
         analyzer.has_dependencies = has_dependencies?
       end
