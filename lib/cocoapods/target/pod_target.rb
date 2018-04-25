@@ -272,7 +272,7 @@ module Pod
         accessors = file_accessors
         accessors = accessors.reject { |a| a.spec.test_specification? } unless include_test_spec_paths
         resource_paths = accessors.flat_map do |accessor|
-          accessor.resources.flat_map { |res| "${PODS_ROOT}/#{res.relative_path_from(sandbox.project.path.dirname)}" }
+          accessor.resources.flat_map { |res| "${PODS_ROOT}/#{res.relative_path_from(sandbox.project_path.dirname)}" }
         end
         resource_bundles = accessors.flat_map do |accessor|
           prefix = BuildSettings::CONFIGURATION_BUILD_DIR_VARIABLE

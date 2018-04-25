@@ -148,7 +148,6 @@ module Pod
               @project.add_podfile(config.podfile_path)
             end
 
-            sandbox.project = @project
             platforms = aggregate_targets.map(&:platform)
             osx_deployment_target = platforms.select { |p| p.name == :osx }.map(&:deployment_target).min
             ios_deployment_target = platforms.select { |p| p.name == :ios }.map(&:deployment_target).min
