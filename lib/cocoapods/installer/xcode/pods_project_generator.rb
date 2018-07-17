@@ -117,7 +117,7 @@ module Pod
 
         private
 
-        AppHostKey = Struct.new(:test_type, :platform)
+        AppHostKey = Struct.new(:test_type, :platform, :id)
         InstallationResults = Struct.new(:pod_target_installation_results, :aggregate_target_installation_results)
 
         def create_project
@@ -217,22 +217,22 @@ module Pod
           UI.message '- Installing app hosts' do
             app_host_keys = pod_target_with_test_specs.flat_map do |pod_target|
               pod_target.supported_test_types.flat_map do |test_type|
-                AppHostKey.new(test_type, pod_target.platform)
+                AppHostKey.new(test_type, pod_target.platform, pod_target.pod_name)
               end.uniq
             end
 
             app_host_keys_by_test_type = app_host_keys.group_by do |app_host_key|
-              [app_host_key.test_type, app_host_key.platform.symbolic_name]
+              [app_host_key.test_type, app_host_key.platform.symbolic_name, app_host_key.id]
             end
 
             app_host_keys_by_test_type.map do |(test_type, platform_symbol), keys|
               deployment_target = keys.map { |k| k.platform.deployment_target }.max
               platform = Platform.new(platform_symbol, deployment_target)
-              AppHostKey.new(test_type, platform)
+              AppHostKey.new(test_type, platform, keys.first.id)
             end
 
             Hash[app_host_keys.map do |app_host_key|
-              [app_host_key, AppHostInstaller.new(sandbox, project, app_host_key.platform, app_host_key.test_type).install!]
+              [app_host_key, AppHostInstaller.new(sandbox, project, app_host_key.platform, app_host_key.test_type, app_host_key.id).install!]
             end]
           end
         end
@@ -334,7 +334,7 @@ module Pod
                   # Wire app host dependencies to test native target
                   if pod_target.test_spec_consumers.any?(&:requires_app_host?)
                     pod_target.supported_test_types.each do |test_type|
-                      app_host_target = app_hosts_by_host_key[AppHostKey.new(test_type, pod_target.platform)]
+                      app_host_target = app_hosts_by_host_key[AppHostKey.new(test_type, pod_target.platform, pod_target.pod_name)]
                       test_native_target.add_dependency(app_host_target)
                       configure_app_host_to_native_target(app_host_target, test_native_target)
                     end

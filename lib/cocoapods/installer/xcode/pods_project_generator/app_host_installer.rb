@@ -25,6 +25,8 @@ module Pod
           #
           attr_reader :test_type
 
+          attr_reader :pod_name
+
           # Initialize a new instance
           #
           # @param [Sandbox] sandbox @see #sandbox
@@ -32,11 +34,12 @@ module Pod
           # @param [Platform] platform @see #platform
           # @param [Symbol] test_type @see #test_type
           #
-          def initialize(sandbox, project, platform, test_type)
+          def initialize(sandbox, project, platform, test_type, pod_name)
             @sandbox = sandbox
             @project = project
             @platform = platform
             @test_type = test_type
+            @pod_name = pod_name
           end
 
           # @return [PBXNativeTarget] the app host native target that was installed.
@@ -69,7 +72,7 @@ module Pod
           # @return [String] The label of the app host label to use given the platform and test type.
           #
           def app_host_label
-            "AppHost-#{Platform.string_name(platform.symbolic_name)}-#{test_type.capitalize}-Tests"
+            "AppHost-#{pod_name}-#{Platform.string_name(platform.symbolic_name)}-#{test_type.capitalize}-Tests"
           end
 
           # @return [String] The deployment target.

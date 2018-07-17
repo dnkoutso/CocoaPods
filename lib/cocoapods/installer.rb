@@ -304,6 +304,8 @@ module Pod
     #
     def install_pod_sources
       @installed_specs = []
+
+      # puts generate_lockfile.to_yaml
       pods_to_install = sandbox_state.added | sandbox_state.changed
       title_options = { :verbose_prefix => '-> '.green }
       root_specs.sort_by(&:name).each do |spec|
