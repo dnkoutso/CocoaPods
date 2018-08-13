@@ -21,31 +21,27 @@ module Pod
           #
           attr_reader :platform
 
-          # @return [Symbol] the test type this app host is going to be used for.
+          # @return [String] the name to use for this app host target.
           #
-          attr_reader :test_type
-
-          attr_reader :pod_name
+          attr_reader :name
 
           # Initialize a new instance
           #
           # @param [Sandbox] sandbox @see #sandbox
           # @param [Pod::Project] project @see #project
           # @param [Platform] platform @see #platform
-          # @param [Symbol] test_type @see #test_type
+          # @param [String] name @see #name
           #
-          def initialize(sandbox, project, platform, test_type, pod_name)
+          def initialize(sandbox, project, platform, name)
             @sandbox = sandbox
             @project = project
             @platform = platform
-            @test_type = test_type
-            @pod_name = pod_name
+            @name = name
           end
 
           # @return [PBXNativeTarget] the app host native target that was installed.
           #
           def install!
-            name = app_host_label
             platform_name = platform.name
             app_host_target = Pod::Generator::AppTargetHelper.add_app_target(project, platform_name, deployment_target,
                                                                              name)
@@ -66,13 +62,7 @@ module Pod
           # @return [Pathname] The absolute path of the Info.plist to use for an app host.
           #
           def app_host_info_plist_path
-            project.path.dirname.+("#{app_host_label}/#{app_host_label}-Info.plist")
-          end
-
-          # @return [String] The label of the app host label to use given the platform and test type.
-          #
-          def app_host_label
-            "AppHost-#{pod_name}-#{Platform.string_name(platform.symbolic_name)}-#{test_type.capitalize}-Tests"
+            project.path.dirname.+("#{name}/#{name}-Info.plist")
           end
 
           # @return [String] The deployment target.
