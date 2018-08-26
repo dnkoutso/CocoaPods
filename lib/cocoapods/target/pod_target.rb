@@ -113,17 +113,18 @@ module Pod
     end
 
     # @return [String] the Swift version for the target. If the pod author has provided a Swift version
-    #                  then that is the one returned, otherwise the Swift version is determined by the user
+    #                  then TODO TODO TODO TODO returned, otherwise the Swift version is determined by the user
     #                  targets that include this pod target.
     #
     def swift_version
-      spec_swift_version || target_definitions.map(&:swift_version).compact.uniq.first
+      spec_swift_versions.max.to_s || target_definitions.map(&:swift_version).compact.uniq.first
     end
 
-    # @return [String] the Swift version within the root spec. Might be `nil` if none is set.
+    # @return [Array<Version>] the Swift versions supported. Might be empty if the author has not
+    #         specified any versions, most likely due to legacy reasons.
     #
-    def spec_swift_version
-      root_spec.swift_version
+    def spec_swift_versions
+      root_spec.swift_versions
     end
 
     # @return [Podfile] The podfile which declares the dependency.

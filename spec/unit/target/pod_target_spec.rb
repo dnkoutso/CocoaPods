@@ -123,13 +123,13 @@ module Pod
 
     describe 'swift version' do
       it 'uses the swift version defined in the specification' do
-        @pod_target.root_spec.stubs(:swift_version).returns('3.0')
+        @pod_target.root_spec.stubs(:swift_versions).returns(['3.0'])
         @target_definition.stubs(:swift_version).returns('2.3')
         @pod_target.swift_version.should == '3.0'
       end
 
-      it 'uses the swift version defined by the target definitions if no swift version is specifed in the spec' do
-        @pod_target.root_spec.stubs(:swift_version).returns(nil)
+      it 'uses the swift version defined by the target definitions if no swift version is specified in the spec' do
+        @pod_target.root_spec.stubs(:swift_versions).returns([])
         @target_definition.stubs(:swift_version).returns('2.3')
         @pod_target.swift_version.should == '2.3'
       end

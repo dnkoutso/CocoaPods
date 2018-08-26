@@ -6,16 +6,6 @@ GIT
     claide (1.0.2)
 
 GIT
-  remote: https://github.com/CocoaPods/Core.git
-  revision: ebb41dcfe6d4bf253c664cbc1ccd7d0c08814864
-  branch: master
-  specs:
-    cocoapods-core (1.6.0.beta.1)
-      activesupport (>= 4.0.2, < 6)
-      fuzzy_match (~> 2.0.4)
-      nap (~> 1.0)
-
-GIT
   remote: https://github.com/CocoaPods/Molinillo.git
   revision: 73e9e58ca41ef31d4670b29b38464438a47a88f3
   branch: master
@@ -99,6 +89,14 @@ GIT
   branch: seg-1.7.7-ruby-2.2
   specs:
     json (1.7.7)
+
+PATH
+  remote: ../cocoapods-core-mine
+  specs:
+    cocoapods-core (1.6.0.beta.1)
+      activesupport (>= 4.0.2, < 6)
+      fuzzy_match (~> 2.0.4)
+      nap (~> 1.0)
 
 PATH
   remote: .

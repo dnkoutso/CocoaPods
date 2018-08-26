@@ -97,7 +97,7 @@ module Pod
           end
           swift_pod_targets = pod_targets.select(&:uses_swift?)
           error_messages = swift_pod_targets.map do |pod_target|
-            next unless pod_target.spec_swift_version.nil?
+            next unless pod_target.spec_swift_versions.empty?
             swift_target_definitions = pod_target.target_definitions.reject { |target| target.swift_version.blank? }
             next if swift_target_definitions.uniq(&:swift_version).count == 1
             if swift_target_definitions.empty?
