@@ -460,17 +460,13 @@ module Pod
       # @param  [Hash{TargetDefinition => TargetInspectionResult}] target_inspections
       #         the user target inspections used to construct the aggregate and pod targets.
       #
-      # @param  [Array<PodTarget>] pod_targets
-      #         the pod targets, which were generated.
-      #
-      # @param  [Hash{Podfile::TargetDefinition => Array<ResolvedSpecification>}] resolver_specs_by_target
-      #         the resolved specifications grouped by target.
+      # @param  [Array<PodTarget>] pod_targets_by_target_definition TODO
       #
       # @return [AggregateTarget]
       #
       def generate_aggregate_target(target_definition, target_inspections, pod_targets_by_target_definition)
+        target_inspection = target_inspections[target_definition]
         if installation_options.integrate_targets?
-          target_inspection = target_inspections[target_definition]
           raise "missing inspection for #{target_definition.inspect}" unless target_inspection
           target_requires_64_bit = Analyzer.requires_64_bit_archs?(target_definition.platform, target_inspection.project.object_version)
           user_project = target_inspection.project
@@ -492,9 +488,11 @@ module Pod
                                                                                        build_configurations)
 
         build_type = target_definition.uses_frameworks? ? Target::BuildType.static_framework : Target::BuildType.static_library
-        AggregateTarget.new(sandbox, target_definition.uses_frameworks?, user_build_configurations, archs, platform,
+        x = AggregateTarget.new(sandbox, target_definition.uses_frameworks?, user_build_configurations, archs, platform,
                             target_definition, client_root, user_project, user_target_uuids,
                             pod_targets_for_build_configuration, :build_type => build_type)
+        x.xcassets_paths = target_inspection.user_xcassets_paths
+        x
       end
 
       # Returns a filtered list of pod targets that should or should not be part of the target definition. Pod targets
@@ -626,8 +624,7 @@ module Pod
       # @param  [Array<PodTarget>] pod_targets
       #         pod targets.
       #
-      # @param  [Hash{String => Array<Specification>}] specs_by_name
-      #         specifications grouped by name.
+      # @param  [Hash{String => Array<Specification>}] all_specs TODO
       #
       # @return [Array<PodTarget>]
       #
