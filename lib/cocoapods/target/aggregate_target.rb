@@ -254,7 +254,7 @@ module Pod
           targets = relevant_pod_targets & pod_targets_for_build_configuration(config)
           resources_by_config[config] = targets.flat_map do |pod_target|
             library_specs = pod_target.library_specs.map(&:name)
-            resource_paths = pod_target.resource_paths.values_at(*library_specs).flatten
+            resource_paths = pod_target.resource_bundle_paths.values_at(*library_specs).flatten
             resource_paths << bridge_support_file
             resource_paths.compact.uniq
           end

@@ -356,14 +356,22 @@ module Pod
     # @return [Hash{String=>Array<String>}] The resource and resource bundle paths this target depends upon keyed by
     #         spec name.
     #
+    def resource_bundle_paths
+      @resource_bundle_paths ||= begin
+        file_accessors.each_with_object({}) do |file_accessor, hash|
+          prefix = Pod::Target::BuildSettings::CONFIGURATION_BUILD_DIR_VARIABLE
+          prefix = configuration_build_dir unless file_accessor.spec.test_specification?
+          hash[file_accessor.spec.name] = file_accessor.resource_bundles.keys.map { |name| "#{prefix}/#{name.shellescape}.bundle" }
+        end
+      end
+    end
+
+    # TODO
+    #
     def resource_paths
       @resource_paths ||= begin
         file_accessors.each_with_object({}) do |file_accessor, hash|
-          resource_paths = file_accessor.resources.map { |res| "${PODS_ROOT}/#{res.relative_path_from(sandbox.project_path.dirname)}" }
-          prefix = Pod::Target::BuildSettings::CONFIGURATION_BUILD_DIR_VARIABLE
-          prefix = configuration_build_dir unless file_accessor.spec.test_specification?
-          resource_bundle_paths = file_accessor.resource_bundles.keys.map { |name| "#{prefix}/#{name.shellescape}.bundle" }
-          hash[file_accessor.spec.name] = resource_paths + resource_bundle_paths
+          hash[file_accessor.spec.name] = file_accessor.resources.map { |res| "${PODS_ROOT}/#{res.relative_path_from(sandbox.project_path.dirname)}" }
         end
       end
     end

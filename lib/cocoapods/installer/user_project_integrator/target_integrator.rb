@@ -346,6 +346,7 @@ module Pod
             add_embed_frameworks_script_phase
             remove_embed_frameworks_script_phase_from_embedded_targets
             add_copy_resources_script_phase
+            integrate_xcassets
             add_check_manifest_lock_script_phase
             add_user_script_phases
           end
@@ -421,6 +422,15 @@ module Pod
             # Static library targets cannot include resources. Skip this phase from being added instead.
             next if native_target.symbol_type == :static_library
             TargetIntegrator.create_or_update_copy_resources_script_phase_to_target(native_target, script_path, input_paths_by_config, output_paths_by_config)
+          end
+        end
+
+        def integrate_xcassets
+          native_targets.each do |native_target|
+            bp = native_target.build_phases.find { |bp| bp.class == Xcodeproj::Project::PBXResourcesBuildPhase }
+            unless bp.nil?
+              bp.
+            end
           end
         end
 

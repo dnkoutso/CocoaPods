@@ -679,7 +679,7 @@ module Pod
         end
 
         it 'returns the correct resource paths' do
-          @test_pod_target.resource_paths.should == {
+          @test_pod_target.resource_bundle_paths.should == {
             'WatermelonLib' => [],
             'WatermelonLib/Tests' => ['${PODS_CONFIGURATION_BUILD_DIR}/WatermelonLibTestResources.bundle'],
             'WatermelonLib/SnapshotTests' => [],

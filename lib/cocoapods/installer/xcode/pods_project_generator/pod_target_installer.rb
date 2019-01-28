@@ -559,7 +559,7 @@ module Pod
               resources_by_config[config] = pod_targets.flat_map do |pod_target|
                 spec_paths_to_include = pod_target.library_specs.map(&:name)
                 spec_paths_to_include << test_spec.name if pod_target == target
-                pod_target.resource_paths.values_at(*spec_paths_to_include).flatten.compact
+                pod_target.resource_bundle_paths.values_at(*spec_paths_to_include).flatten.compact
               end
             end
             generator = Generator::CopyResourcesScript.new(resource_paths_by_config, target.platform)
@@ -633,7 +633,7 @@ module Pod
               resources_by_config[config] = pod_targets.flat_map do |pod_target|
                 spec_paths_to_include = pod_target.library_specs.map(&:name)
                 spec_paths_to_include << app_spec.name if pod_target == target
-                pod_target.resource_paths.values_at(*spec_paths_to_include).flatten.compact
+                pod_target.resource_bundle_paths.values_at(*spec_paths_to_include).flatten.compact
               end
             end
             generator = Generator::CopyResourcesScript.new(resource_paths_by_config, target.platform)
