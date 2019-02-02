@@ -24,7 +24,8 @@ module Pod
 
       # @return [Integer] The Xcode object version until which 64-bit architectures should be manually specified
       #
-      # Xcode 10 will automatically select the correct architectures based on deployment target
+      # @note   Xcode 10 will automatically select the correct architectures based on deployment target
+      #
       IOS_64_BIT_ONLY_PROJECT_VERSION = 50
 
       # @return [Sandbox] The sandbox to use for this analysis.
@@ -35,6 +36,14 @@ module Pod
       #
       attr_reader :podfile
 
+      # @return [Array<Source>] Sources included.
+      #
+      attr_reader :sources
+
+      # todo
+      #
+      attr_reader :podfile_dependency_cache
+
       # @return [Lockfile] The Lockfile, if available, that stores the information about the Pods previously installed.
       #
       attr_reader :lockfile
@@ -42,13 +51,6 @@ module Pod
       # @return [Array<Source>] Sources provided by plugins or `nil`.
       #
       attr_reader :plugin_sources
-
-      # @return [Bool] Whether the analysis has dependencies and thus sources must be configured.
-      #
-      # @note   This is used by the `pod lib lint` command to prevent update of specs when not needed.
-      #
-      attr_reader :has_dependencies
-      alias_method :has_dependencies?, :has_dependencies
 
       # @return [Hash, Boolean, nil] Pods that have been requested to be updated or true if all Pods should be updated.
       #         This can be false if no pods should be updated.
@@ -63,21 +65,22 @@ module Pod
       #
       # @param  [Sandbox] sandbox @see #sandbox
       # @param  [Podfile] podfile @see #podfile
+      # @param  [Array<Source>] sources @see #sources
       # @param  [Lockfile] lockfile @see #lockfile
       # @param  [Array<Source>] plugin_sources @see #plugin_sources
-      # @param  [Boolean] has_dependencies @see #has_dependencies
       # @param  [Hash, Boolean, nil] pods_to_update @see #pods_to_update
       #
-      def initialize(sandbox, podfile, lockfile = nil, plugin_sources = nil, has_dependencies = true,
+      def initialize(sandbox, podfile, sources, podfile_dependency_cache, lockfile = nil, plugin_sources = nil,
                      pods_to_update = false)
         @sandbox  = sandbox
         @podfile  = podfile
+        @sources = sources
+        podfile_dependency_cache = podfile_dependency_cache
+
         @lockfile = lockfile
         @plugin_sources = plugin_sources
-        @has_dependencies = has_dependencies
         @pods_to_update = pods_to_update
         @installation_options = podfile.installation_options
-        @podfile_dependency_cache = PodfileDependencyCache.from_podfile(podfile)
         @result = nil
       end
 
@@ -129,54 +132,7 @@ module Pod
         end]
         sources.each { |s| specs_by_source[s] ||= [] }
         @result = AnalysisResult.new(podfile_state, specs_by_target, specs_by_source, specifications, sandbox_state,
-                                     targets, pod_targets, @podfile_dependency_cache)
-      end
-
-      # Updates the git source repositories.
-      #
-      def update_repositories
-        sources.each do |source|
-          if source.git?
-            config.sources_manager.update(source.name, true)
-          else
-            UI.message "Skipping `#{source.name}` update because the repository is not a git source repository."
-          end
-        end
-        @specs_updated = true
-      end
-
-      # Returns the sources used to query for specifications.
-      #
-      # When no explicit Podfile sources or plugin sources are defined, this defaults to the master spec repository.
-      #
-      # @return [Array<Source>] the sources to be used in finding specifications, as specified by the podfile or all
-      #         sources.
-      #
-      def sources
-        @sources ||= begin
-          sources = podfile.sources
-          plugin_sources = @plugin_sources || []
-
-          # Add any sources specified using the :source flag on individual dependencies.
-          dependency_sources = podfile_dependencies.map(&:podspec_repo).compact
-          all_dependencies_have_sources = dependency_sources.count == podfile_dependencies.count
-
-          if all_dependencies_have_sources
-            sources = dependency_sources
-          elsif has_dependencies? && sources.empty? && plugin_sources.empty?
-            sources = ['https://github.com/CocoaPods/Specs.git'] + dependency_sources
-          else
-            sources += dependency_sources
-          end
-
-          result = sources.uniq.map do |source_url|
-            config.sources_manager.find_or_create_source_with_url(source_url)
-          end
-          unless plugin_sources.empty?
-            result.insert(0, *plugin_sources)
-          end
-          result
-        end
+                                     targets, pod_targets, podfile_dependency_cache)
       end
 
       #-----------------------------------------------------------------------#
@@ -206,13 +162,13 @@ module Pod
       end
 
       def podfile_dependencies
-        @podfile_dependency_cache.podfile_dependencies
+        podfile_dependency_cache.podfile_dependencies
       end
 
       #-----------------------------------------------------------------------#
 
       def validate_podfile!
-        validator = Installer::PodfileValidator.new(podfile, @podfile_dependency_cache)
+        validator = Installer::PodfileValidator.new(podfile, podfile_dependency_cache)
         validator.validate
 
         unless validator.valid?
@@ -533,7 +489,7 @@ module Pod
 
           pod_name = pod_target.pod_name
 
-          dependencies = @podfile_dependency_cache.target_definition_dependencies(target_definition).select do |dependency|
+          dependencies = podfile_dependency_cache.target_definition_dependencies(target_definition).select do |dependency|
             Specification.root_name(dependency.name) == pod_name
           end
 
@@ -1027,7 +983,7 @@ module Pod
       #
       def verify_platforms_specified!
         unless installation_options.integrate_targets?
-          @podfile_dependency_cache.target_definition_list.each do |target_definition|
+          podfile_dependency_cache.target_definition_list.each do |target_definition|
             if !target_definition.empty? && target_definition.platform.nil?
               raise Informative, 'It is necessary to specify the platform in the Podfile if not integrating.'
             end
@@ -1046,7 +1002,7 @@ module Pod
       def inspect_targets_to_integrate
         inspection_result = {}
         UI.section 'Inspecting targets to integrate' do
-          inspectors = @podfile_dependency_cache.target_definition_list.map do |target_definition|
+          inspectors = podfile_dependency_cache.target_definition_list.map do |target_definition|
             next if target_definition.abstract?
             TargetInspector.new(target_definition, config.installation_root)
           end.compact

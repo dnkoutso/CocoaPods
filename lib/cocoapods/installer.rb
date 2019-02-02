@@ -60,6 +60,18 @@ module Pod
     #
     attr_reader :lockfile
 
+    #-------------------------------------------------------------------------#
+    #
+    private
+
+    # TODO
+    #
+    attr_reader :podfile_dependency_cache
+
+    #-------------------------------------------------------------------------#
+
+    public
+
     # Initialize a new instance
     #
     # @param  [Sandbox]  sandbox     @see #sandbox
@@ -74,6 +86,7 @@ module Pod
       @use_default_plugins = true
       @has_dependencies = true
       @pod_installers = []
+      @podfile_dependency_cache = Pod::Installer::Analyzer::PodfileDependencyCache.from_podfile(podfile)
     end
 
     # @return [Hash, Boolean, nil] Pods that have been requested to be
@@ -110,6 +123,12 @@ module Pod
     #
     attr_accessor :clean_install
     alias_method :clean_install?, :clean_install
+
+    private
+
+    # TODO
+    #
+    attr_reader :podfile_dependency_cache
 
     #-------------------------------------------------------------------------#
 
@@ -213,7 +232,7 @@ module Pod
       analyzer = create_analyzer(plugin_sources)
 
       UI.section 'Updating local specs repositories' do
-        analyzer.update_repositories
+        update_repositories
       end if repo_update?
 
       UI.section 'Analyzing dependencies' do
@@ -388,7 +407,54 @@ module Pod
     end
 
     def create_analyzer(plugin_sources = nil)
-      Analyzer.new(sandbox, podfile, lockfile, plugin_sources, has_dependencies?, update)
+      Analyzer.new(sandbox, podfile, sources, podfile_dependency_cache, lockfile, plugin_sources, update)
+    end
+
+    # Updates the git source repositories.
+    #
+    def update_repositories
+      sources.each do |source|
+        if source.git?
+          config.sources_manager.update(source.name, true)
+        else
+          UI.message "Skipping `#{source.name}` update because the repository is not a git source repository."
+        end
+      end
+      @specs_updated = true
+    end
+
+    # Returns the sources used to query for specifications.
+    #
+    # When no explicit Podfile sources or plugin sources are defined, this defaults to the master spec repository.
+    #
+    # @return [Array<Source>] the sources to be used in finding specifications, as specified by the podfile or all
+    #         sources.
+    #
+    def sources
+      @sources ||= begin
+        sources = podfile.sources
+        plugin_sources = @plugin_sources || []
+
+        # Add any sources specified using the :source flag on individual dependencies.
+        dependency_sources = podfile_dependency_cache.podfile_dependencies.map(&:podspec_repo).compact
+        all_dependencies_have_sources = dependency_sources.count == podfile_dependency_cache.podfile_dependencies.count
+
+        if all_dependencies_have_sources
+          sources = dependency_sources
+        elsif has_dependencies? && sources.empty? && plugin_sources.empty?
+          sources = ['https://github.com/CocoaPods/Specs.git'] + dependency_sources
+        else
+          sources += dependency_sources
+        end
+
+        result = sources.uniq.map do |source_url|
+          config.sources_manager.find_or_create_source_with_url(source_url)
+        end
+        unless plugin_sources.empty?
+          result.insert(0, *plugin_sources)
+        end
+        result
+      end
     end
 
     # Ensures that the white-listed build configurations are known to prevent
