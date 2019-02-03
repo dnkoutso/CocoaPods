@@ -1233,6 +1233,29 @@ module Pod
           debug_configuration_two.build_settings['SWIFT_VERSION'].should == '3.2'
         end
 
+        it 'honors swift version for test specifications' do
+          test_podspec = stub_podspec(/.*source_files.*/, '"source_files": "*.swift",')
+          validator = test_swiftpod
+          consumer = stub(:platform_name => 'iOS')
+          validator.instance_variable_set(:@consumer, consumer)
+          debug_configuration = stub(:build_settings => {})
+          test_debug_configuration = stub(:build_settings => {})
+          native_target = stub(:build_configuration_list => stub(:build_configurations => [debug_configuration]))
+          test_native_target = stub(:build_configuration_list => stub(:build_configurations => [test_debug_configuration]))
+          pod_target = stub(:name => 'PodTarget', :uses_swift? => true, :swift_version => '4.0')
+          pod_target.stubs(:uses_swift_for_spec?).with(test_podspec).returns(true)
+          pod_target_installation = stub(:target => pod_target, :native_target => native_target,
+                                         :test_native_targets => [test_native_target],
+                                         :test_specs_by_native_target => { test_native_target => test_podspec })
+          pod_target_installation_results = { 'PodTarget' => pod_target_installation }
+          aggregate_target = stub(:pod_targets => [pod_target])
+          installer = stub(:pod_targets => [pod_target])
+          validator.instance_variable_set(:@installer, installer)
+          validator.send(:configure_pod_targets, [aggregate_target], [pod_target_installation_results], '9.0')
+          debug_configuration.build_settings['SWIFT_VERSION'].should == '4.0'
+          test_debug_configuration.build_settings['SWIFT_VERSION'].should == '4.0'
+        end
+
         it 'honors swift version set by the pod target for dependencies that are not part of the aggregate target' do
           validator = test_swiftpod
           consumer = stub(:platform_name => 'iOS')
