@@ -30,7 +30,7 @@ module Pod
 
               user_build_configurations = { 'Debug' => :debug, 'Release' => :release, 'AppStore' => :release,
                                             'Test' => :debug }
-              @pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [], @platform, [@spec],
+              @pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [], @platform,
                                           [@target_definition], [file_accessor])
               pod_targets_by_config = Hash[user_build_configurations.each_key.map { |c| [c, [@pod_target]] }]
               @target = AggregateTarget.new(config.sandbox, false, user_build_configurations, [], @platform,

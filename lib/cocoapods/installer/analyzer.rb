@@ -725,7 +725,7 @@ module Pod
         host_requires_frameworks = target_definitions.any?(&:uses_frameworks?)
         platform = determine_platform(specs, target_definitions, host_requires_frameworks)
         file_accessors = create_file_accessors(specs, platform)
-        PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
+        PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
                       target_definitions, file_accessors, scope_suffix, :build_type => build_type)
       end
 

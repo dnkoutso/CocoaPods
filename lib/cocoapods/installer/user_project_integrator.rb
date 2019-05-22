@@ -200,31 +200,31 @@ module Pod
 
       # @!group Private Helpers
       #-----------------------------------------------------------------------#
-
-      # @return [Pathname] the path where the workspace containing the Pods
-      #         project and the user projects should be saved.
       #
-      def workspace_path
-        if podfile.workspace_path
-          declared_path = podfile.workspace_path
-          path_with_ext = File.extname(declared_path) == '.xcworkspace' ? declared_path : "#{declared_path}.xcworkspace"
-          podfile_dir   = File.dirname(podfile.defined_in_file || '')
-          absolute_path = File.expand_path(path_with_ext, podfile_dir)
-          Pathname.new(absolute_path)
-        elsif user_project_paths.count == 1
-          project = user_project_paths.first.basename('.xcodeproj')
-          installation_root + "#{project}.xcworkspace"
-        else
-          raise Informative, 'Could not automatically select an Xcode ' \
-            "workspace. Specify one in your Podfile like so:\n\n"       \
-            "    workspace 'path/to/Workspace.xcworkspace'\n"
-        end
-      end
-
-      # @return [Array<Pathname>] the paths of all the user projects referenced
-      #         by the targets that require integration.
+      #       # @return [Pathname] the path where the workspace containing the Pods
+      #       #         project and the user projects should be saved.
+      #       #
+      #       def workspace_path
+      #         if podfile.workspace_path
+      #           declared_path = podfile.workspace_path
+      #           path_with_ext = File.extname(declared_path) == '.xcworkspace' ? declared_path : "#{declared_path}.xcworkspace"
+      #           podfile_dir   = File.dirname(podfile.defined_in_file || '')
+      #           absolute_path = File.expand_path(path_with_ext, podfile_dir)
+      #           Pathname.new(absolute_path)
+      #         elsif user_project_paths.count == 1
+      #           project = user_project_paths.first.basename('.xcodeproj')
+      #           installation_root + "#{project}.xcworkspace"
+      #         else
+      #           raise Informative, 'Could not automatically select an Xcode ' \
+      #             "workspace. Specify one in your Podfile like so:\n\n"       \
+      #             "    workspace 'path/to/Workspace.xcworkspace'\n"
+      #         end
+      #       end
       #
-      # @note   Empty target definitions are ignored.
+      #       # @return [Array<Pathname>] the paths of all the user projects referenced
+      #       #         by the targets that require integration.
+      #       #
+      #       # @note   Empty target definitions are ignored.
       #
       def user_project_paths_to_integrate
         targets_to_integrate.map(&:user_project_path).compact.uniq

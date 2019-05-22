@@ -106,8 +106,7 @@ module Pod
         @target_definition.abstract = false
         @target_definition.set_platform(:ios, '10.0')
         file_accessor = fixture_file_accessor(@spec, Platform.ios)
-        @pod_target = PodTarget.new(config.sandbox, false, {}, [], Platform.ios, [@spec], [@target_definition],
-                                    [file_accessor])
+        @pod_target = PodTarget.new(config.sandbox, false, {}, [], Platform.ios, [@target_definition], [file_accessor])
         @target = AggregateTarget.new(config.sandbox, false, {}, [], Platform.ios, @target_definition,
                                       config.sandbox.root.dirname, nil, nil, 'Release' => [@pod_target], 'Debug' => [@pod_target])
       end
@@ -115,8 +114,8 @@ module Pod
       describe 'with configuration dependent pod targets' do
         before do
           file_accessor = fixture_file_accessor(@spec, Platform.ios)
-          @pod_target_release = PodTarget.new(config.sandbox, false, {}, [], Platform.ios, [@spec],
-                                              [@target_definition], [file_accessor])
+          @pod_target_release = PodTarget.new(config.sandbox, false, {}, [], Platform.ios, [@target_definition],
+                                              [file_accessor])
           @target.stubs(:pod_targets_for_build_configuration).with('Debug').returns([@pod_target])
           @target.stubs(:pod_targets_for_build_configuration).with('Release').returns([@pod_target, @pod_target_release])
           @target.stubs(:pod_targets).returns([@pod_target, @pod_target_release])
@@ -140,8 +139,7 @@ module Pod
         before do
           @coconut_spec = fixture_spec('coconut-lib/CoconutLib.podspec')
           file_accessor = fixture_file_accessor(@coconut_spec, Platform.ios)
-          @pod_target_release = PodTarget.new(config.sandbox, false, {}, [],
-                                              Platform.ios, [@coconut_spec], [@target_definition],
+          @pod_target_release = PodTarget.new(config.sandbox, false, {}, [], Platform.ios, [@target_definition],
                                               [file_accessor])
           @target.stubs(:pod_targets).returns([@pod_target])
           @target.stubs(:user_build_configurations).returns('Debug' => :debug, 'Release' => :release)

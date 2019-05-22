@@ -130,7 +130,7 @@ def fixture_pod_target_with_specs(specs, host_requires_frameworks = false, user_
   target_definitions << fixture_target_definition if target_definitions.empty?
   target_definitions.each { |td| specs.each { |spec| td.store_pod(spec.name) } }
   file_accessors = specs.map { |spec| fixture_file_accessor(spec, platform) }
-  Pod::PodTarget.new(config.sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
+  Pod::PodTarget.new(config.sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
                      target_definitions, file_accessors, scope_suffix, :build_type => build_type)
 end
 

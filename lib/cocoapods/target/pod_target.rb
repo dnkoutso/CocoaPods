@@ -80,7 +80,8 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,target_definitions,
                    file_accessors, scope_suffix = nil,
-                   build_type: Target::BuildType.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks))
+                   build_type: Target::BuildType.infer_from_spec(file_accessors.first.spec,
+                                                                 :host_requires_frameworks => host_requires_frameworks))
       super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :build_type => build_type)
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?
       raise "Can't initialize a PodTarget with only abstract TargetDefinitions!" if target_definitions.all?(&:abstract?)
@@ -117,7 +118,7 @@ module Pod
           cache[cache_key]
         else
           target_definitions = [target_definition]
-          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
+          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
                                  [target_definition], file_accessors, target_definition.label, :build_type => build_type)
           target.dependent_targets = dependent_targets.flat_map { |pt| pt.scoped(cache) }.select do |pt|
             pt.target_definitions == target_definitions

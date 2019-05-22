@@ -30,7 +30,7 @@ module Pod
 
               user_build_configurations = { 'Debug' => :debug, 'Release' => :release }
               @pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [],
-                                          Platform.new(:ios, '4.3'), [@spec], [@target_definition], [file_accessor])
+                                          Platform.new(:ios, '4.3'), [@target_definition], [file_accessor])
               @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
 
               @spec.prefix_header_contents = '#import "BlocksKit.h"'
@@ -210,14 +210,13 @@ module Pod
                 end
 
                 user_build_configurations = { 'Debug' => :debug, 'Release' => :release }
-                all_specs = [@watermelon_spec, *@watermelon_spec.recursive_subspecs]
                 file_accessors = [file_accessor, unit_test_file_accessor, snapshot_test_file_accessor, app_file_accessor]
                 @watermelon_pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [],
-                                                       Platform.new(:ios, '6.0'), all_specs, [@target_definition],
+                                                       Platform.new(:ios, '6.0'), [@target_definition],
                                                        file_accessors)
                 @installer = PodTargetInstaller.new(config.sandbox, @project, @watermelon_pod_target)
                 @watermelon_pod_target2 = PodTarget.new(config.sandbox, false, user_build_configurations, [],
-                                                        Platform.new(:osx, '10.8'), all_specs, [@target_definition2],
+                                                        Platform.new(:osx, '10.8'), [@target_definition2],
                                                         file_accessors)
                 @installer2 = PodTargetInstaller.new(config.sandbox, @project, @watermelon_pod_target2)
               end
@@ -589,7 +588,6 @@ module Pod
 
                 user_build_configurations = { 'Debug' => :debug, 'Release' => :release }
                 @minions_pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [], Platform.ios,
-                                                    [@minions_spec, *@minions_spec.recursive_subspecs],
                                                     [@target_definition], [file_accessor])
                 @installer = PodTargetInstaller.new(config.sandbox, @project, @minions_pod_target)
 
@@ -700,7 +698,7 @@ module Pod
 
                 user_build_configurations = { 'Debug' => :debug, 'Release' => :release }
                 @pod_target = PodTarget.new(config.sandbox, false, user_build_configurations, [], Platform.ios,
-                                            [@spec], [@target_definition], [file_accessor])
+                                            [@target_definition], [file_accessor])
                 @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
               end
 
