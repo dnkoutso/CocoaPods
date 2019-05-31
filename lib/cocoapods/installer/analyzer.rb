@@ -264,7 +264,7 @@ module Pod
         end
       end
 
-      # Copies the pod targets of any of the app embedded aggregate targets into
+      # Copies the pod targets of an embeddable aggregate target  of any of the app embedded aggregate targets into
       # their potential host aggregate target, if that potential host aggregate target's
       # user_target hosts any of the app embedded aggregate targets' user_targets
       #
@@ -275,11 +275,11 @@ module Pod
       #         representing the embedded targets to be integrated
       #
       # @param  [Boolean] libraries_only if true, only library-type embedded
-      #         targets are considered, otherwise, all other types are have
-      #         their pods copied to their host targets as well (extensions, etc.)
+      #         targets are considered, otherwise, all other types have their pods copied to their host targets as well
+      #         (extensions, etc.)
       #
-      # @return [Hash{String=>Array<PodTarget>}] the additional pod targets to include to the host
-      #          keyed by their configuration.
+      # @return [Hash{String=>Array<PodTarget>}] the additional pod targets to include to the host keyed by their
+      #         configuration.
       #
       def embedded_target_pod_targets_by_host(aggregate_target, embedded_aggregate_targets, libraries_only)
         return {} if aggregate_target.requires_host_target?
@@ -288,7 +288,10 @@ module Pod
         embedded_aggregate_targets.each do |embedded_aggregate_target|
           # Skip non libraries in library-only mode
           next if libraries_only && !embedded_aggregate_target.library?
-          next if aggregate_target.search_paths_aggregate_targets.include?(embedded_aggregate_target)
+          if aggregate_target.search_paths_aggregate_targets.include?(embedded_aggregate_target)
+            puts "=== #{aggregate_target.name} #{aggregate_target.library?} vs #{embedded_aggregate_target.name} #{embedded_aggregate_target.requires_host_target?}"
+            next if !aggregate_target.requires_host_target? && embedded_aggregate_target.library?
+          end
           next unless embedded_aggregate_target.user_targets.any? do |embedded_user_target|
             # You have to ask the host target's project for the host targets of
             # the embedded target, as opposed to asking user_project for the
@@ -314,15 +317,14 @@ module Pod
         embedded_pod_targets_by_build_config
       end
 
-      # Raises an error if there are embedded targets in the Podfile, but
-      # their host targets have not been declared in the Podfile. As it
-      # finds host targets, it collection information on host target types.
+      # Raises an error if there are embedded targets in the Podfile, but their host targets have not been declared in
+      # the Podfile. As it finds host targets, it collects information on host target types.
       #
-      # @param  [Array<AggregateTarget>] aggregate_targets the generated
-      #         aggregate targets
+      # @param  [Array<AggregateTarget>] aggregate_targets the full set of aggregate targets available.
       #
-      # @param  [Array<AggregateTarget>] embedded_aggregate_targets the aggregate targets
-      #         representing the embedded targets to be integrated
+      # @param  [Array<AggregateTarget>] embedded_aggregate_targets the aggregate targets that require to be embedded.
+      #
+      # @return [void]
       #
       def analyze_host_targets_in_podfile(aggregate_targets, embedded_aggregate_targets)
         target_definitions_by_uuid = {}
@@ -420,7 +422,7 @@ module Pod
         end
         if installation_options.integrate_targets?
           # Copy embedded target pods that cannot have their pods embedded as frameworks to
-          # their host targets, and ensure we properly link library pods to their host targets
+          # their host targets, and ensure we properly link library pods to their host targets #
           embedded_targets = aggregate_targets.select(&:requires_host_target?)
           analyze_host_targets_in_podfile(aggregate_targets, embedded_targets)
 

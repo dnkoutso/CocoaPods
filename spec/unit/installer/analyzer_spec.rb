@@ -1344,7 +1344,36 @@ module Pod
           ].sort
         end
 
-        it "does not copy a static library's pod target, when the static library aggregate target has search paths inherited" do
+        it 'shit_new' do
+          podfile = Pod::Podfile.new do
+            source SpecHelper.test_repo_url
+            use_frameworks!
+            platform :ios, '8.0'
+            project 'SampleProject/SampleProject'
+
+            target 'SampleFramework' do
+              project 'SampleProject/Sample Lib/Sample Lib'
+              pod 'monkey'
+
+              target 'SampleFrameworkTests' do
+                inherit! :search_paths
+              end
+            end
+          end
+          analyzer = Pod::Installer::Analyzer.new(config.sandbox, podfile)
+          result = analyzer.analyze
+
+          result.targets.select { |at| at.name == 'Pods-SampleFramework' }.flat_map(&:pod_targets).map(&:name).sort.uniq.should == %w(
+            monkey
+          ).sort
+          result.targets.flat_map { |at| at.pod_targets_for_build_configuration('Debug').map { |pt| "#{at.name}/Debug/#{pt.name}" } }.sort.should == [
+              'Pods-SampleFramework/Debug/monkey',
+              'Pods-SampleFrameworkTests/Debug/monkey',
+          ].sort
+        end
+
+        # it "does not copy a static library's pod target, when the static library aggregate target has search paths inherited" do
+        it "shit" do
           podfile = Pod::Podfile.new do
             source SpecHelper.test_repo_url
             platform :ios, '8.0'
