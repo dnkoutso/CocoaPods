@@ -41,7 +41,7 @@ module Pod
         #
         COPY_PODS_RESOURCES_PHASE_NAME = 'Copy Pods Resources'.freeze
 
-        # TODO
+        # @return [String] the name of the combine xcassets phase
         #
         COMBINE_XCASSETS_PHASE_NAME = 'Combine Assets'.freeze
 

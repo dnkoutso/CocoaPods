@@ -10,10 +10,6 @@ module Pod
     EMBED_FRAMEWORKS_IN_HOST_TARGET_TYPES = [:app_extension, :framework, :static_library, :messages_extension,
                                              :watch_extension, :xpc_service].freeze
 
-    # TODO
-    #
-    attr_accessor :xcassets_paths
-
     # @return [TargetDefinition] the target definition of the Podfile that
     #         generated this target.
     #
@@ -57,6 +53,10 @@ module Pod
     #
     attr_reader :search_paths_aggregate_targets
 
+    # @return [Array<String>] The xcassets paths required by the user's target.
+    #
+    attr_reader :xcassets_paths
+
     # Initialize a new instance
     #
     # @param [Sandbox] sandbox @see Target#sandbox
@@ -73,7 +73,8 @@ module Pod
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, target_definition,
                    client_root, user_project, user_target_uuids, pod_targets_for_build_configuration,
-                   build_type: Target::BuildType.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks))
+                   build_type: Target::BuildType.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks),
+                   xcassets_paths: [])
       super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :build_type => build_type)
       raise "Can't initialize an AggregateTarget without a TargetDefinition!" if target_definition.nil?
       raise "Can't initialize an AggregateTarget with an abstract TargetDefinition!" if target_definition.abstract?
@@ -82,6 +83,8 @@ module Pod
       @user_project = user_project
       @user_target_uuids = user_target_uuids
       @pod_targets_for_build_configuration = pod_targets_for_build_configuration
+      @xcassets_paths = @xcassets_paths;
+
       @pod_targets = pod_targets_for_build_configuration.values.flatten.uniq
       @search_paths_aggregate_targets = []
       @xcconfigs = {}
@@ -100,8 +103,8 @@ module Pod
         (before + after).uniq
       end
       AggregateTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-                          target_definition, client_root, user_project, user_target_uuids, merged, :build_type => build_type).tap do |aggregate_target|
-        aggregate_target.xcassets_paths = xcassets_paths
+                          target_definition, client_root, user_project, user_target_uuids, merged,
+                          :build_type => build_type, :xcassets_paths => xcassets_paths).tap do |aggregate_target|
         aggregate_target.search_paths_aggregate_targets.concat(search_paths_aggregate_targets).freeze
       end
     end

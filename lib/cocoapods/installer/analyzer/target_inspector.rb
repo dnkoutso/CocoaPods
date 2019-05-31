@@ -210,7 +210,7 @@ module Pod
         end
 
         # Computes the `.xcassets` paths relevant for the user's targets. This is to be used for combining the
-        # `.xcassets` files during the copy resources phases during compilation.
+        # `.xcassets` files during compilation.
         #
         # @param  [Array<PBXNativeTarget>] targets the user's targets of the project of
         #         #target_definition which needs to be integrated.
