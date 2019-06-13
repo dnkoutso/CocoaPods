@@ -50,6 +50,13 @@ To install release candidates run `[sudo] gem install cocoapods --pre`
 * No longer show a warning when using an optional include (`#include?`) to
   include the Pods .xcconfig from the base .xcconfig file  
   [Rob Hudson](https://github.com/robtimp)
+* Prevent crash when configuring schemes for subspecs.  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#8880](https://github.com/CocoaPods/CocoaPods/issues/8880)
+
+* Attempt to use Swift version for dependencies during lint.  
+  [Dimitris Koutsogiorgas](https://github.com/dnkoutso)
+  [#8764](https://github.com/CocoaPods/CocoaPods/issues/8764)
 
 
 ## 1.7.1 (2019-05-30)
