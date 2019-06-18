@@ -585,8 +585,8 @@ module Pod
               library_specs = all_specs_by_type[:library] || []
               test_specs = all_specs_by_type[:test] || []
               app_specs = all_specs_by_type[:app] || []
-              target_type = Target::BuildType.infer_from_spec(root_spec, :host_requires_frameworks => target_definition.uses_frameworks?)
-              pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, target_type)
+              build_type = determine_build_type(root_spec, target_definition)
+              pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, build_type)
               hash[root_spec] ||= {}
               (hash[root_spec][pod_variant] ||= []) << target_definition
               pod_variant_spec = hash[root_spec].keys.find { |k| k == pod_variant }
@@ -601,7 +601,8 @@ module Pod
             end
             suffixes = PodVariantSet.new(target_definitions_by_variant.keys).scope_suffixes
             target_definitions_by_variant.map do |variant, target_definitions|
-              generate_pod_target(target_definitions, target_inspections, variant.specs + variant.test_specs + variant.app_specs, :build_type => variant.build_type, :scope_suffix => suffixes[variant])
+              generate_pod_target(target_definitions, target_inspections, variant.specs + variant.test_specs + variant.app_specs,
+                                  :build_type => variant.build_type, :scope_suffix => suffixes[variant])
             end
           end
 
@@ -612,8 +613,9 @@ module Pod
           resolver_specs_by_target.flat_map do |target_definition, specs|
             grouped_specs = specs.group_by(&:root).values.uniq
             pod_targets = grouped_specs.flat_map do |pod_specs|
-              target_type = Target::BuildType.infer_from_spec(pod_specs.first, :host_requires_frameworks => target_definition.uses_frameworks?)
-              generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec), :build_type => target_type).scoped(dedupe_cache)
+              build_type = determine_build_type(pod_specs.first, target_definition)
+              generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec),
+                                  :build_type => build_type).scoped(dedupe_cache)
             end
 
             compute_pod_target_dependencies(pod_targets, specs.map(&:spec).group_by(&:name))
@@ -626,7 +628,7 @@ module Pod
       # @param  [Array<PodTarget>] pod_targets
       #         pod targets.
       #
-      # @param  [Hash{String => Array<Specification>}] specs_by_name
+      # @param  [Hash{String => Array<Specification>}] all_specs
       #         specifications grouped by name.
       #
       # @return [Array<PodTarget>]
@@ -793,6 +795,15 @@ module Pod
           deployment_target = [deployment_target, minimum].max
         end
         Platform.new(platform_name, deployment_target)
+      end
+
+      # TODO
+      #
+      def determine_build_type(spec, target_definition)
+        inferred_build_type = Target::BuildType.infer_from_spec(spec.root, :host_requires_frameworks => target_definition.uses_frameworks?)
+        linkage = target_definition.linkage_for_pod(spec.root.name) || inferred_build_type.linkage
+        packaging = target_definition.packaging_for_pod(spec.root.name) || inferred_build_type.packaging
+        Target::BuildType.new(:linkage => linkage, :packaging => packaging)
       end
 
       # Generates dependencies that require the specific version of the Pods

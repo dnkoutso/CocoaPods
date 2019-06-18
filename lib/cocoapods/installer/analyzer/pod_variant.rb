@@ -46,7 +46,7 @@ module Pod
           @hash = [specs, platform, build_type].hash
         end
 
-        # @note Test specs are intentionally not included as part of the equality for pod variants since a
+        # @note Test and app specs are intentionally not included as part of the equality for pod variants since a
         #       pod variant should not be affected by the number of test nor app specs included.
         #
         # @return [Bool] whether the {PodVariant} is equal to another taking all

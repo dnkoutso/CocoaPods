@@ -119,7 +119,8 @@ module Pod
       target_definitions.map do |target_definition|
         cache_key = [specs, target_definition]
         cache[cache_key] ||= begin
-          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs, [target_definition], file_accessors, target_definition.label,
+          target = PodTarget.new(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
+                                 [target_definition], file_accessors, target_definition.label,
                                  :build_type => build_type)
           scope_dependent_targets = ->(dependent_targets) do
             dependent_targets.flat_map do |pod_target|

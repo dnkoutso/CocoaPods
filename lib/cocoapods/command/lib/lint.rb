@@ -26,7 +26,7 @@ module Pod
              '(defaults to https://github.com/CocoaPods/Specs.git). ' \
              'Multiple sources must be comma-delimited.'],
             ['--platforms=ios,macos', 'Lint against specific platforms' \
-              '(defaults to all platforms supported by the podspec).' \
+              '(defaults to all platforms supported by the podspec). ' \
               'Multiple platforms must be comma-delimited'],
             ['--private', 'Lint skips checks that apply only to public specs'],
             ['--swift-version=VERSION', 'The SWIFT_VERSION that should be used to lint the spec. ' \
