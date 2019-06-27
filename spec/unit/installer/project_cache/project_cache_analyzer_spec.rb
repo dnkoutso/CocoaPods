@@ -185,12 +185,12 @@ module Pod
           end
 
           it 'returns sibling pod target when adding a new subspec' do
-            original_subspec = fixture_pod_target('matryoshka/matryoshka.podspec', false,
-                                                  {}, [], Pod::Platform.new(:ios, '6.0'), [])
-            subspec_target_1 = fixture_pod_target('matryoshka/matryoshka.podspec', false,
-                                                  {}, [], Pod::Platform.new(:ios, '6.0'), [], 'Foo')
-            subspec_target_2 = fixture_pod_target('matryoshka/matryoshka.podspec', false,
-                                                  {}, [], Pod::Platform.new(:ios, '6.0'), [], 'Bar')
+            original_subspec = fixture_pod_target('matryoshka/matryoshka.podspec', false, {}, [],
+                                                  Pod::Platform.new(:ios, '6.0'), [])
+            subspec_target_1 = fixture_pod_target('matryoshka/matryoshka.podspec', false, {}, [],
+                                                  Pod::Platform.new(:ios, '6.0'), [], 'Foo')
+            subspec_target_2 = fixture_pod_target('matryoshka/matryoshka.podspec', false, {}, [],
+                                                  Pod::Platform.new(:ios, '6.0'), [], 'Bar')
             subspec_pods = [subspec_target_2, subspec_target_1]
             subspec_pods.each do |target|
               @sandbox.pod_target_project_path(target.pod_name).mkpath

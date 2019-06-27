@@ -95,7 +95,7 @@ module Pod
           pod_targets_to_generate.merge(dirty_pod_targets)
           aggregate_targets_to_generate.merge(dirty_aggregate_targets)
 
-          # Since multi xcodeproj will group targets by PodTarget#pod_name into individual projects, we
+          # Since multi xcodeproj will group targets by PodTarget#project_name into individual projects, we
           # need to append these "sibling" targets to the list of targets we need to generate before finalizing the total list,
           # otherwise we will end up with missing targets.
           #
@@ -155,7 +155,7 @@ module Pod
             support_files_dir_exists = File.exist? target.support_files_dir
             xcodeproj_exists = case target
                                when PodTarget
-                                 File.exist? sandbox.pod_target_project_path(target.pod_name)
+                                 File.exist? sandbox.pod_target_project_path(target.project_name)
                                when AggregateTarget
                                  File.exist? sandbox.project_path
                                else
@@ -166,8 +166,8 @@ module Pod
         end
 
         def compute_sibling_pod_targets(pod_targets, pod_targets_to_generate)
-          pod_targets_by_name = pod_targets.group_by(&:pod_name)
-          pod_targets_to_generate.flat_map { |t| pod_targets_by_name[t.pod_name] }
+          pod_targets_by_project_name = pod_targets.group_by(&:project_name)
+          pod_targets_to_generate.flat_map { |t| pod_targets_by_project_name[t.pod_name] }
         end
       end
     end

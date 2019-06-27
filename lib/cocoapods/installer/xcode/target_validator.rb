@@ -36,6 +36,7 @@ module Pod
           verify_no_static_framework_transitive_dependencies
           verify_swift_pods_swift_version
           verify_swift_pods_have_module_dependencies
+          verify_no_multiple_project_names
         end
 
         private
@@ -147,6 +148,19 @@ module Pod
 
           raise Informative, 'The following Swift pods cannot yet be integrated '\
                              "as static libraries:\n\n#{error_messages.join("\n\n")}"
+        end
+
+        def verify_no_multiple_project_names
+          error_messages = pod_targets.map do |pod_target|
+            project_names = pod_target.target_definitions.map { |td| td.project_name_for_pod(pod_target.pod_name) }.compact.uniq
+            next unless project_names.count > 1
+            "- `#{pod_target.name}` specifies multiple project names (#{project_names.map { |pn| "`#{pn}`" }.to_sentence}) " \
+            "in different targets (#{pod_target.target_definitions.map { |td| "`#{td.name}`" }.to_sentence})."
+          end.compact
+          return if error_messages.empty?
+
+          raise Informative, 'The following pods cannot be integrated:' \
+                             "\n\n#{error_messages.join("\n\n")}"
         end
       end
     end

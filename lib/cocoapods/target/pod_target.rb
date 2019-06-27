@@ -225,6 +225,16 @@ module Pod
       target_definitions.first.podfile
     end
 
+    # @return [String] the project name derived from the target definitions that integrate this pod. If none is specified
+    #         then the name of the pod is used by default.
+    #
+    # @note   The name is guaranteed to be the same across all target definitions and is validated by the target
+    #         validator during installation.
+    #
+    def project_name
+      target_definitions.first.project_name_for_pod(pod_name) || pod_name
+    end
+
     # @return [String] The name to use for the source code module constructed
     #         for this target, and which will be used to import the module in
     #         implementation source files.
