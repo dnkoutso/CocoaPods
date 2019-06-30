@@ -94,13 +94,15 @@ module Pod
           dirty_pod_targets, dirty_aggregate_targets = dirty_targets.partition { |target| target.is_a?(PodTarget) }
           pod_targets_to_generate.merge(dirty_pod_targets)
           aggregate_targets_to_generate.merge(dirty_aggregate_targets)
-
-          # Since multi xcodeproj will group targets by PodTarget#project_name into individual projects, we
-          # need to append these "sibling" targets to the list of targets we need to generate before finalizing the total list,
+          # Multi xcodeproj will group targets by PodTarget#project_name into individual projects, and we
+          # need to append the sibling targets from its old project (if it has moved) and its current project
+          # to the list of targets we need to generate before finalizing the total list,
           # otherwise we will end up with missing targets.
           #
+          old_sibling_pod_targets = compute_old_sibling_pod_targets(pod_targets, pod_targets_to_generate, cache)
           sibling_pod_targets = compute_sibling_pod_targets(pod_targets, pod_targets_to_generate)
           pod_targets_to_generate.merge(sibling_pod_targets)
+          pod_targets_to_generate.merge(old_sibling_pod_targets)
 
           # We either return the full list of aggregate targets or none since the aggregate targets go into the Pods.xcodeproj
           # and so we need to regenerate all aggregate targets when regenerating Pods.xcodeproj.
@@ -167,7 +169,19 @@ module Pod
 
         def compute_sibling_pod_targets(pod_targets, pod_targets_to_generate)
           pod_targets_by_project_name = pod_targets.group_by(&:project_name)
-          pod_targets_to_generate.flat_map { |t| pod_targets_by_project_name[t.pod_name] }
+          pod_targets_to_generate.flat_map { |t| pod_targets_by_project_name[t.project_name] }
+        end
+
+        def compute_old_sibling_pod_targets(pod_targets, pod_targets_to_generate, cache)
+          pod_targets_by_project_name = pod_targets.group_by(&:project_name)
+          pod_targets_to_generate.flat_map do |target|
+            if (target_cache_key = cache.cache_key_by_target_label[target.label]) &&
+              target_cache_key.project_name != target.project_name
+              pod_targets_by_project_name.fetch(target_cache_key.project_name, [])
+            else
+              []
+            end
+          end
         end
       end
     end

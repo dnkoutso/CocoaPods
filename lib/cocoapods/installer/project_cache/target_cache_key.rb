@@ -65,6 +65,13 @@ module Pod
           key_hash
         end
 
+        # @return [String]
+        #         The name of the project the target belongs to.
+        #
+        def project_name
+          key_hash['PROJECT_NAME']
+        end
+
         # Creates a TargetCacheKey instance from the given hash.
         #
         # @param [Hash{String => Object}] key_hash

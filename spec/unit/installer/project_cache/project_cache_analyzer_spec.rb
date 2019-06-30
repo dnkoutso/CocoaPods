@@ -19,7 +19,7 @@ module Pod
           @main_aggregate_target.support_files_dir.mkpath
           @secondary_aggregate_target.support_files_dir.mkpath
           @pod_targets.each do |target|
-            @sandbox.pod_target_project_path(target.pod_name).mkpath
+            @sandbox.pod_target_project_path(target.project_name).mkpath
             target.support_files_dir.mkpath
           end
         end
@@ -162,7 +162,7 @@ module Pod
             result.aggregate_targets_to_generate.should.equal(nil)
           end
 
-          it 'returns all pod targets that share the same #pod_name' do
+          it 'returns all pod targets that share the same #pod_name if no project_name' do
             subspec_target_1 = fixture_pod_target('matryoshka/matryoshka.podspec', false,
                                                   {}, [], Pod::Platform.new(:ios, '6.0'), [], 'Foo')
             subspec_target_2 = fixture_pod_target('matryoshka/matryoshka.podspec', false,
@@ -183,7 +183,9 @@ module Pod
             result.pod_targets_to_generate.should.equal(subspec_pods)
             result.aggregate_targets_to_generate.should.equal(nil)
           end
+        end
 
+        describe 'project grouping changes' do
           it 'returns sibling pod target when adding a new subspec' do
             original_subspec = fixture_pod_target('matryoshka/matryoshka.podspec', false, {}, [],
                                                   Pod::Platform.new(:ios, '6.0'), [])
@@ -205,6 +207,87 @@ module Pod
             analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, subspec_pods, [])
             result = analyzer.analyze
             result.pod_targets_to_generate.should.equal(subspec_pods)
+            result.aggregate_targets_to_generate.should.equal(nil)
+          end
+
+          it 'wont regenerate sibling pod targets in the same project' do
+            @banana_lib.stubs(:project_name).returns('A.xcodeproj')
+            @monkey_lib.stubs(:project_name).returns('A.xcodeproj')
+            [@monkey_lib, @banana_lib].each do |target|
+              @sandbox.pod_target_project_path(target.project_name).mkpath
+              target.support_files_dir.mkpath
+            end
+            cache_key_by_pod_target_labels = Hash[@pod_targets.map { |pod_target| [pod_target.label, TargetCacheKey.from_pod_target(pod_target)] }]
+            cache = ProjectInstallationCache.new(cache_key_by_pod_target_labels, @build_configurations, @project_object_version)
+            analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, @pod_targets, [])
+            result = analyzer.analyze
+            result.pod_targets_to_generate.should.be.empty
+            result.aggregate_targets_to_generate.should.equal(nil)
+          end
+
+          it 'regenerates sibling pod targets in the same project' do
+            @banana_lib.stubs(:project_name).returns('A.xcodeproj')
+            @monkey_lib.stubs(:project_name).returns('A.xcodeproj')
+            [@monkey_lib, @banana_lib].each do |target|
+              @sandbox.pod_target_project_path(target.project_name).mkpath
+              target.support_files_dir.mkpath
+            end
+            cache_key_by_pod_target_labels = {
+              @monkey_lib.label => TargetCacheKey.from_pod_target(@monkey_lib),
+              @banana_lib.label => TargetCacheKey.from_cache_hash('BUILD_SETTINGS_CHECKSUM' => 'Blah'),
+              @orange_lib.label => TargetCacheKey.from_pod_target(@orange_lib),
+            }
+            cache = ProjectInstallationCache.new(cache_key_by_pod_target_labels, @build_configurations, @project_object_version)
+            analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, @pod_targets, [])
+            result = analyzer.analyze
+            Set.new(result.pod_targets_to_generate).should == Set[@banana_lib, @monkey_lib]
+            result.aggregate_targets_to_generate.should.equal(nil)
+          end
+
+          it 'regenerates sibling pod targets from an old project' do
+            @banana_lib.stubs(:project_name).returns('A.xcodeproj')
+            @monkey_lib.stubs(:project_name).returns('A.xcodeproj')
+            [@monkey_lib, @banana_lib].each do |target|
+              @sandbox.pod_target_project_path(target.project_name).mkpath
+              target.support_files_dir.mkpath
+            end
+            cache_key_by_pod_target_labels = Hash[@pod_targets.map { |pod_target| [pod_target.label, TargetCacheKey.from_pod_target(pod_target)] }]
+            cache = ProjectInstallationCache.new(cache_key_by_pod_target_labels, @build_configurations, @project_object_version)
+            @monkey_lib.stubs(:project_name).returns('B.xcodeproj')
+            analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, @pod_targets, [])
+            result = analyzer.analyze
+            Set.new(result.pod_targets_to_generate).should == Set[@banana_lib, @monkey_lib]
+            result.aggregate_targets_to_generate.should.equal(nil)
+          end
+
+          it 'doesnt regenerate sibling pod targets from the same project' do
+            @banana_lib.stubs(:project_name).returns('A.xcodeproj')
+            @monkey_lib.stubs(:project_name).returns('A.xcodeproj')
+            [@monkey_lib, @banana_lib].each do |target|
+              @sandbox.pod_target_project_path(target.project_name).mkpath
+              target.support_files_dir.mkpath
+            end
+            cache_key_by_pod_target_labels = Hash[@pod_targets.map { |pod_target| [pod_target.label, TargetCacheKey.from_pod_target(pod_target)] }]
+            cache = ProjectInstallationCache.new(cache_key_by_pod_target_labels, @build_configurations, @project_object_version)
+            analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, @pod_targets, [])
+            result = analyzer.analyze
+            Set.new(result.pod_targets_to_generate).should.be.empty
+            result.aggregate_targets_to_generate.should.equal(nil)
+          end
+
+          it 'regenerates all sibling pod targets moving into same project' do
+            @banana_lib.stubs(:project_name).returns('A.xcodeproj')
+            @monkey_lib.stubs(:project_name).returns('B.xcodeproj')
+            [@monkey_lib, @banana_lib].each do |target|
+              @sandbox.pod_target_project_path(target.project_name).mkpath
+              target.support_files_dir.mkpath
+            end
+            cache_key_by_pod_target_labels = Hash[@pod_targets.map { |pod_target| [pod_target.label, TargetCacheKey.from_pod_target(pod_target)] }]
+            cache = ProjectInstallationCache.new(cache_key_by_pod_target_labels, @build_configurations, @project_object_version)
+            @monkey_lib.stubs(:project_name).returns('A.xcodeproj')
+            analyzer = ProjectCacheAnalyzer.new(@sandbox, cache, @build_configurations, @project_object_version, @pod_targets, [])
+            result = analyzer.analyze
+            Set.new(result.pod_targets_to_generate).should == Set[@monkey_lib, @banana_lib]
             result.aggregate_targets_to_generate.should.equal(nil)
           end
         end
