@@ -110,7 +110,7 @@ module Pod
             end
 
             it 'does not link public headers from vendored framework, when frameworks required' do
-              @pod_target.stubs(:build_type).returns(Target::BuildType.dynamic_framework)
+              @pod_target.stubs(:build_type).returns(BuildType.dynamic_framework)
               @installer.install!
               headers_root = config.sandbox.public_headers.root
               framework_header = headers_root + 'BananaLib/BananaFramework/BananaFramework.h'

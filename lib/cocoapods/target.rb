@@ -1,5 +1,4 @@
 require 'cocoapods/target/build_settings'
-require 'cocoapods/target/build_type'
 
 module Pod
   # Model class which describes a Pods target.
@@ -41,7 +40,7 @@ module Pod
     #
     attr_reader :build_settings
 
-    # @return [Target::BuildType] the build type for this target.
+    # @return [BuildType] the build type for this target.
     #
     attr_reader :build_type
     private :build_type
@@ -55,7 +54,7 @@ module Pod
     # @param [Platform] platform @see #platform
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-                   build_type: Target::BuildType.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks?))
+                   build_type: BuildType.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks?))
       @sandbox = sandbox
       @host_requires_frameworks = host_requires_frameworks
       @user_build_configurations = user_build_configurations

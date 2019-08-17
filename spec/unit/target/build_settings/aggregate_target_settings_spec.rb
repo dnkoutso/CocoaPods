@@ -256,7 +256,7 @@ module Pod
           end
 
           before do
-            Target.any_instance.stubs(:build_type).returns(Target::BuildType.dynamic_framework)
+            Target.any_instance.stubs(:build_type).returns(BuildType.dynamic_framework)
           end
 
           behaves_like 'Aggregate'
@@ -308,7 +308,7 @@ module Pod
             end
 
             it 'includes default runpath search path list when not using frameworks but links a vendored dynamic framework' do
-              @target.stubs(:build_type => Target::BuildType.static_library)
+              @target.stubs(:build_type => BuildType.static_library)
               @generator.generate.to_hash['LD_RUNPATH_SEARCH_PATHS'].should == "$(inherited) '@executable_path/Frameworks' '@loader_path/Frameworks'"
             end
           end

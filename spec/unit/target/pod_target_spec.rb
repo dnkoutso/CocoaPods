@@ -496,12 +496,12 @@ module Pod
       end
 
       it 'returns true when building as a framework' do
-        @pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
+        @pod_target.stubs(:build_type => BuildType.dynamic_framework)
         @pod_target.should.defines_module
       end
 
       it 'returns true when building as a static framework' do
-        @pod_target.stubs(:build_type => Target::BuildType.static_framework)
+        @pod_target.stubs(:build_type => BuildType.static_framework)
         @pod_target.should.defines_module
       end
 

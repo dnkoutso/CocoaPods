@@ -81,11 +81,11 @@ module Pod
     # @param [Array<TargetDefinition>] target_definitions @see #target_definitions
     # @param [Array<Sandbox::FileAccessor>] file_accessors @see #file_accessors
     # @param [String] scope_suffix @see #scope_suffix
-    # @param [Target::BuildType] build_type @see #build_type
+    # @param [BuildType] build_type @see #build_type
     #
     def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, specs,
                    target_definitions, file_accessors = [], scope_suffix = nil,
-                   build_type: Target::BuildType.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks))
+                   build_type: BuildType.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks))
       super(sandbox, host_requires_frameworks, user_build_configurations, archs, platform, :build_type => build_type)
       raise "Can't initialize a PodTarget without specs!" if specs.nil? || specs.empty?
       raise "Can't initialize a PodTarget without TargetDefinition!" if target_definitions.nil? || target_definitions.empty?

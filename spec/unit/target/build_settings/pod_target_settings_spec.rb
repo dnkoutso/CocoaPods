@@ -123,7 +123,7 @@ module Pod
           end
 
           it 'vendored frameworks should be added to frameworks paths if use_frameworks! isnt set' do
-            @pod_target.stubs(:build_type).returns(Target::BuildType.static_library)
+            @pod_target.stubs(:build_type).returns(BuildType.static_library)
             @xcconfig = @generator.generate
             @xcconfig.to_hash['FRAMEWORK_SEARCH_PATHS'].should.include('spec/fixtures/monkey')
             @xcconfig.to_hash['FRAMEWORK_SEARCH_PATHS'].should.include('${PODS_ROOT}/AAA')
@@ -287,7 +287,7 @@ module Pod
           end
 
           it 'includes correct other ld flags when requires frameworks' do
-            @coconut_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
+            @coconut_pod_target.stubs(:build_type => BuildType.dynamic_framework)
             generator = PodTargetSettings.new(@coconut_pod_target, @coconut_test_spec)
             xcconfig = generator.generate
             xcconfig.to_hash['OTHER_LDFLAGS'].should == '$(inherited) -ObjC -framework "CoconutLib"'

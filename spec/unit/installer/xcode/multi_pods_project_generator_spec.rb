@@ -360,7 +360,7 @@ module Pod
           end
 
           it 'adds system frameworks to dynamic targets' do
-            @orangeframework_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
+            @orangeframework_pod_target.stubs(:build_type => BuildType.dynamic_framework)
             pod_generator_result = @generator.generate!
             orange_project = pod_generator_result.projects_by_pod_targets.keys.find { |p| p.path.basename.to_s == 'OrangeFramework.xcodeproj' }
             orange_project.should.not.be.nil
@@ -457,8 +457,8 @@ module Pod
           end
 
           it 'adds framework file references for framework pod targets that require building' do
-            @orangeframework_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
-            @coconut_ios_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
+            @orangeframework_pod_target.stubs(:build_type => BuildType.dynamic_framework)
+            @coconut_ios_pod_target.stubs(:build_type => BuildType.dynamic_framework)
             @coconut_ios_pod_target.stubs(:should_build?).returns(true)
             pod_generator_result = @generator.generate!
             coconut_project = pod_generator_result.projects_by_pod_targets.keys.find { |p| p.path.basename.to_s == 'CoconutLib.xcodeproj' }
@@ -494,8 +494,8 @@ module Pod
           end
 
           it 'does not add framework references for framework pod targets that do not require building' do
-            @orangeframework_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
-            @coconut_ios_pod_target.stubs(:build_type => Target::BuildType.dynamic_framework)
+            @orangeframework_pod_target.stubs(:build_type => BuildType.dynamic_framework)
+            @coconut_ios_pod_target.stubs(:build_type => BuildType.dynamic_framework)
             @coconut_ios_pod_target.stubs(:should_build?).returns(false)
             pod_generator_result = @generator.generate!
             coconut_project = pod_generator_result.projects_by_pod_targets.keys.find { |p| p.path.basename.to_s == 'CoconutLib.xcodeproj' }

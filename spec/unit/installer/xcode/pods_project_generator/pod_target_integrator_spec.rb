@@ -128,8 +128,8 @@ module Pod
               end
 
               it 'excludes test framework and resource paths from dependent targets when using static libraries' do
-                @watermelon_pod_target.stubs(:build_type).returns(Pod::Target::BuildType.static_library)
-                @coconut_pod_target.stubs(:build_type).returns(Pod::Target::BuildType.static_library)
+                @watermelon_pod_target.stubs(:build_type).returns(BuildType.static_library)
+                @coconut_pod_target.stubs(:build_type).returns(BuildType.static_library)
                 @coconut_pod_target.stubs(:dependent_targets).returns([@watermelon_pod_target])
                 PodTargetIntegrator.new(@coconut_target_installation_result).integrate!
                 @test_native_target.build_phases.count.should == 0

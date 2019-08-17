@@ -497,7 +497,7 @@ module Pod
         pod_targets_for_build_configuration = filter_pod_targets_for_target_definition(target_definition, pod_targets_by_target_definition,
                                                                                        build_configurations)
 
-        build_type = target_definition.uses_frameworks? ? Target::BuildType.static_framework : Target::BuildType.static_library
+        build_type = target_definition.uses_frameworks? ? BuildType.static_framework : BuildType.static_library
         AggregateTarget.new(sandbox, target_definition.uses_frameworks?, user_build_configurations, archs, platform,
                             target_definition, client_root, user_project, user_target_uuids,
                             pod_targets_for_build_configuration, :build_type => build_type)
@@ -594,7 +594,7 @@ module Pod
               library_specs = all_specs_by_type[:library] || []
               test_specs = all_specs_by_type[:test] || []
               app_specs = all_specs_by_type[:app] || []
-              target_type = Target::BuildType.infer_from_spec(root_spec, :host_requires_frameworks => target_definition.uses_frameworks?)
+              target_type = BuildType.infer_from_spec(root_spec, :host_requires_frameworks => target_definition.uses_frameworks?)
               pod_variant = PodVariant.new(library_specs, test_specs, app_specs, target_definition.platform, target_type)
               hash[root_spec] ||= {}
               (hash[root_spec][pod_variant] ||= []) << target_definition
@@ -621,7 +621,7 @@ module Pod
           resolver_specs_by_target.flat_map do |target_definition, specs|
             grouped_specs = specs.group_by(&:root).values.uniq
             pod_targets = grouped_specs.flat_map do |pod_specs|
-              target_type = Target::BuildType.infer_from_spec(pod_specs.first, :host_requires_frameworks => target_definition.uses_frameworks?)
+              target_type = BuildType.infer_from_spec(pod_specs.first, :host_requires_frameworks => target_definition.uses_frameworks?)
               generate_pod_target([target_definition], target_inspections, pod_specs.map(&:spec), :build_type => target_type).scoped(dedupe_cache)
             end
 

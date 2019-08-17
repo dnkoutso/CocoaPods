@@ -19,7 +19,7 @@ module Pod
         #
         attr_reader :platform
 
-        # @return [Target::BuildType] the build type of the target
+        # @return [BuildType] the build type of the target
         #
         attr_reader :build_type
 
@@ -35,9 +35,9 @@ module Pod
         # @param [Array<Specification>] test_specs @see #test_specs
         # @param [Array<Specification>] app_specs  @see #app_specs
         # @param [Platform] platform               @see #platform
-        # @param [Target::BuildType] build_type    @see #build_type
+        # @param [BuildType] build_type       @see #build_type
         #
-        def initialize(specs, test_specs, app_specs, platform, build_type = Target::BuildType.static_library)
+        def initialize(specs, test_specs, app_specs, platform, build_type = BuildType.static_library)
           @specs = specs
           @test_specs = test_specs
           @app_specs = app_specs

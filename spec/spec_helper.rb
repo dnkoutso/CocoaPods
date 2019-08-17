@@ -126,7 +126,7 @@ end
 def fixture_pod_target_with_specs(specs, host_requires_frameworks = false, user_build_configurations = {}, archs = [],
                                   platform = Pod::Platform.new(:ios, '6.0'), target_definitions = [],
                                   scope_suffix = nil, build_type: nil)
-  build_type ||= Pod::Target::BuildType.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks)
+  build_type ||= BuildType.infer_from_spec(specs.first, :host_requires_frameworks => host_requires_frameworks)
   target_definitions << fixture_target_definition if target_definitions.empty?
   target_definitions.each { |td| specs.each { |spec| td.store_pod(spec.name) } }
   file_accessors = specs.map { |spec| fixture_file_accessor(spec, platform) }
