@@ -14,11 +14,11 @@ module Pod
               user_build_configurations = { 'Debug' => :debug, 'Release' => :release, 'AppStore' => :release,
                                             'Test' => :debug }
               @platform = Platform.new(:ios, '6.0')
-              @pod_target = fixture_pod_target(@banana_spec, false, user_build_configurations, [], @platform,
+              @pod_target = fixture_pod_target(@banana_spec, BuildType.static_library, user_build_configurations, [], @platform,
                                                [@target_definition])
               FileReferencesInstaller.new(config.sandbox, [@pod_target], @project).install!
               pod_targets_by_config = Hash[user_build_configurations.each_key.map { |c| [c, [@pod_target]] }]
-              @target = AggregateTarget.new(config.sandbox, false, user_build_configurations, [], @platform,
+              @target = AggregateTarget.new(config.sandbox, BuildType.static_library, user_build_configurations, [], @platform,
                                             @target_definition, config.sandbox.root.dirname, nil, nil,
                                             pod_targets_by_config)
               @installer = AggregateTargetInstaller.new(config.sandbox, @project, @target)
@@ -272,7 +272,7 @@ module Pod
 
             it 'installs umbrella headers for frameworks' do
               @pod_target.stubs(:build_type => BuildType.dynamic_framework)
-              @target.stubs(:build_type => BuildType.static_framework, :host_requires_frameworks? => true)
+              @target.stubs(:build_type => BuildType.static_framework)
               build_files = @installer.install!.native_target.headers_build_phase.files
               build_file = build_files.find { |bf| bf.file_ref.path.include?('Pods-SampleProject-umbrella.h') }
               build_file.should.not.be.nil
@@ -280,7 +280,7 @@ module Pod
             end
 
             it 'does not create xcconfigs for non existent user build configurations' do
-              target = AggregateTarget.new(config.sandbox, false, { 'Debug' => :debug }, [], @platform,
+              target = AggregateTarget.new(config.sandbox, BuildType.static_library, { 'Debug' => :debug }, [], @platform,
                                            @target_definition, config.sandbox.root.dirname, nil, nil, {})
               target.stubs(:includes_resources?).returns(true)
               target.stubs(:includes_frameworks?).returns(true)

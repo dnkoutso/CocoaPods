@@ -12,7 +12,7 @@ module Pod
               @project.add_pod_group('BananaLib', fixture('banana-lib'))
               platform = Platform.new(:ios, '4.3')
               @target_definition = fixture_target_definition('SampleProject', platform)
-              @pod_target = fixture_pod_target(@banana_spec, false, { 'Debug' => :debug, 'Release' => :release }, [],
+              @pod_target = fixture_pod_target(@banana_spec, BuildType.static_library, { 'Debug' => :debug, 'Release' => :release }, [],
                                                platform, [@target_definition])
               FileReferencesInstaller.new(config.sandbox, [@pod_target], @project).install!
               @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
@@ -136,11 +136,13 @@ module Pod
                 @osx_target_definition = fixture_target_definition('SampleProject2', Platform.new(:osx, '10.8'))
                 user_build_configurations = { 'Debug' => :debug, 'Release' => :release }
                 all_specs = [@watermelon_spec, *@watermelon_spec.recursive_subspecs]
-                @watermelon_ios_pod_target = fixture_pod_target_with_specs(all_specs, false, user_build_configurations,
-                                                                           [], Platform.new(:ios, '6.0'),
+                @watermelon_ios_pod_target = fixture_pod_target_with_specs(all_specs, BuildType.static_library,
+                                                                           user_build_configurations, [],
+                                                                           Platform.new(:ios, '6.0'),
                                                                            [@ios_target_definition])
-                @watermelon_osx_pod_target = fixture_pod_target_with_specs(all_specs, false, user_build_configurations,
-                                                                           [], Platform.new(:osx, '10.8'),
+                @watermelon_osx_pod_target = fixture_pod_target_with_specs(all_specs, BuildType.static_library,
+                                                                           user_build_configurations, [],
+                                                                           Platform.new(:osx, '10.8'),
                                                                            [@osx_target_definition])
                 FileReferencesInstaller.new(config.sandbox, [@watermelon_ios_pod_target, @watermelon_osx_pod_target],
                                             @project).install!
@@ -537,8 +539,9 @@ module Pod
                 @project = Project.new(config.sandbox.project_path)
                 @project.add_pod_group('MinionsLib', fixture('minions-lib'))
                 @minions_pod_target = fixture_pod_target_with_specs([@minions_spec, *@minions_spec.recursive_subspecs],
-                                                                    false, { 'Debug' => :debug, 'Release' => :release },
-                                                                    [], Platform.ios, [@target_definition])
+                                                                    BuildType.static_library,
+                                                                    { 'Debug' => :debug, 'Release' => :release }, [],
+                                                                    Platform.ios, [@target_definition])
                 FileReferencesInstaller.new(config.sandbox, [@minions_pod_target], @project).install!
                 @installer = PodTargetInstaller.new(config.sandbox, @project, @minions_pod_target)
               end
@@ -896,7 +899,8 @@ module Pod
                   all_specs = [watermelon_spec, *watermelon_spec.recursive_subspecs]
                   test_spec = all_specs.find { |s| s.name == 'WatermelonLib/Tests' }
                   test_spec.ios.deployment_target = '12.0'
-                  watermelon_pod_target = fixture_pod_target_with_specs(all_specs, false, user_build_configurations, [],
+                  watermelon_pod_target = fixture_pod_target_with_specs(all_specs, BuildType.static_library,
+                                                                        user_build_configurations, [],
                                                                         Platform.new(:ios, '6.0'), [target_definition])
                   FileReferencesInstaller.new(config.sandbox, [watermelon_pod_target], project).install!
                   PodTargetInstaller.new(config.sandbox, project, watermelon_pod_target).install!
@@ -1047,10 +1051,9 @@ module Pod
                 @project = Project.new(config.sandbox.project_path)
                 @project.add_pod_group('snake', fixture('snake'))
 
-                @pod_target = fixture_pod_target('snake/snake.podspec', false,
+                @pod_target = fixture_pod_target('snake/snake.podspec', BuildType.dynamic_framework,
                                                  { 'Debug' => :debug, 'Release' => :release }, [],
-                                                 Pod::Platform.new(:ios, '6.0'), [@target_definition], nil,
-                                                 :build_type => BuildType.dynamic_framework)
+                                                 Pod::Platform.new(:ios, '6.0'), [@target_definition], nil)
 
                 FileReferencesInstaller.new(config.sandbox, [@pod_target], @project).install!
                 @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
@@ -1135,10 +1138,9 @@ module Pod
 
               describe 'depending on the root' do
                 before do
-                  @pod_target = fixture_pod_target_with_specs([@pod_spec, *@pod_spec.subspecs], false,
+                  @pod_target = fixture_pod_target_with_specs([@pod_spec, *@pod_spec.subspecs], BuildType.dynamic_framework,
                                                               { 'Debug' => :debug, 'Release' => :release }, [],
-                                                              Pod::Platform.new(:ios, '6.0'), [@target_definition],
-                                                              nil, :build_type => BuildType.dynamic_framework)
+                                                              Pod::Platform.new(:ios, '6.0'), [@target_definition], nil)
                   FileReferencesInstaller.new(config.sandbox, [@pod_target], @project).install!
                   @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
                 end
@@ -1200,10 +1202,9 @@ module Pod
                 before do
                   @project.group_for_spec('HeadersMappingSubspec')
                   @pod_spec.subspecs.last.name.should == 'HeadersMappingSubspec/Implementation'
-                  @pod_target = fixture_pod_target_with_specs(@pod_spec.subspecs.reverse, false,
+                  @pod_target = fixture_pod_target_with_specs(@pod_spec.subspecs.reverse, BuildType.dynamic_framework,
                                                               { 'Debug' => :debug, 'Release' => :release }, [],
-                                                              Pod::Platform.new(:ios, '6.0'), [@target_definition],
-                                                              nil, :build_type => BuildType.dynamic_framework)
+                                                              Pod::Platform.new(:ios, '6.0'), [@target_definition], nil)
 
                   FileReferencesInstaller.new(config.sandbox, [@pod_target], @project).install!
                   @installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
@@ -1370,8 +1371,7 @@ module Pod
                 @banana_spec.resource_bundle = nil
                 @project.add_pod_group('BananaLib', fixture('banana-lib'))
 
-                @pod_target = fixture_pod_target(@banana_spec, false, 'Debug' => :debug, 'Release' => :release,
-                                                                      :build_type => BuildType.dynamic_framework)
+                @pod_target = fixture_pod_target(@banana_spec, BuildType.dynamic_framework, 'Debug' => :debug, 'Release' => :release)
                 target_installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
 
                 # Use a file references installer to add the files so that the correct ones are added.
@@ -1427,7 +1427,7 @@ module Pod
                 @banana_spec.resource_bundle = { 'banana_bundle' => ['Resources/**/*'] }
                 @project.add_pod_group('BananaLib', fixture('banana-lib'))
 
-                @pod_target = fixture_pod_target(@banana_spec, false, 'Debug' => :debug, 'Release' => :release)
+                @pod_target = fixture_pod_target(@banana_spec, BuildType.static_library, 'Debug' => :debug, 'Release' => :release)
                 target_installer = PodTargetInstaller.new(config.sandbox, @project, @pod_target)
 
                 # Use a file references installer to add the files so that the correct ones are added.

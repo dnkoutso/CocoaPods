@@ -25,8 +25,8 @@ gem 'json', :git => 'https://github.com/segiddins/json.git', :branch => 'seg-1.7
 
 group :development do
   cp_gem 'claide',                'CLAide'
+  gem 'cocoapods-core', :git => 'https://github.com/dnkoutso/Core', :branch => 'use_frameworks_linkage_dsl'
   # cp_gem 'cocoapods-core',        'Core'
-  gem 'cocoapods-core', :path => '../cocoapods-core-mine'
   cp_gem 'cocoapods-deintegrate', 'cocoapods-deintegrate'
   cp_gem 'cocoapods-downloader',  'cocoapods-downloader'
   cp_gem 'cocoapods-plugins',     'cocoapods-plugins'

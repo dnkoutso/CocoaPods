@@ -84,6 +84,18 @@ GIT
     cocoapods-try (1.1.0)
 
 GIT
+  remote: https://github.com/dnkoutso/Core
+  revision: eb598702991b048903f4069750d02df79bb4a039
+  branch: use_frameworks_linkage_dsl
+  specs:
+    cocoapods-core (1.8.0.beta.1)
+      activesupport (>= 4.0.2, < 6)
+      algoliasearch (~> 1.0)
+      concurrent-ruby (~> 1.0)
+      fuzzy_match (~> 2.0.4)
+      nap (~> 1.0)
+
+GIT
   remote: https://github.com/leahneukirchen/bacon.git
   revision: 5e7115d577ebc98f7dc45fe628964751939f294e
   specs:
@@ -95,16 +107,6 @@ GIT
   branch: seg-1.7.7-ruby-2.2
   specs:
     json (1.7.7)
-
-PATH
-  remote: ../cocoapods-core-mine
-  specs:
-    cocoapods-core (1.8.0.beta.1)
-      activesupport (>= 4.0.2, < 6)
-      algoliasearch (~> 1.0)
-      concurrent-ruby (~> 1.0)
-      fuzzy_match (~> 2.0.4)
-      nap (~> 1.0)
 
 PATH
   remote: .

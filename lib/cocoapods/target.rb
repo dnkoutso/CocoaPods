@@ -16,12 +16,6 @@ module Pod
     #
     attr_reader :sandbox
 
-    # @return [Boolean] Whether the target needs to be implemented as a framework.
-    #         Computed by analyzer.
-    #
-    attr_reader :host_requires_frameworks
-    alias_method :host_requires_frameworks?, :host_requires_frameworks
-
     # @return [Hash{String=>Symbol}] A hash representing the user build
     #         configurations where each key corresponds to the name of a
     #         configuration and its value to its type (`:debug` or `:release`).
@@ -43,20 +37,17 @@ module Pod
     # @return [BuildType] the build type for this target.
     #
     attr_reader :build_type
-    private :build_type
 
     # Initialize a new target
     #
     # @param [Sandbox] sandbox @see #sandbox
-    # @param [Boolean] host_requires_frameworks @see #host_requires_frameworks
+    # @param [BuildType] build_type @see #build_type
     # @param [Hash{String=>Symbol}] user_build_configurations @see #user_build_configurations
     # @param [Array<String>] archs @see #archs
     # @param [Platform] platform @see #platform
     #
-    def initialize(sandbox, host_requires_frameworks, user_build_configurations, archs, platform,
-                   build_type: BuildType.infer_from_spec(nil, :host_requires_frameworks => host_requires_frameworks?))
+    def initialize(sandbox, build_type, user_build_configurations, archs, platform)
       @sandbox = sandbox
-      @host_requires_frameworks = host_requires_frameworks
       @user_build_configurations = user_build_configurations
       @archs = archs
       @platform = platform

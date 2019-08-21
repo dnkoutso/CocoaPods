@@ -49,7 +49,7 @@ module Pod
             vendored_dep_target.stubs(:build_settings => PodTargetSettings.new(vendored_dep_target))
 
             @spec = fixture_spec('banana-lib/BananaLib.podspec')
-            @pod_target = fixture_pod_target(@spec, true)
+            @pod_target = fixture_pod_target(@spec, BuildType.dynamic_framework)
             @pod_target.dependent_targets = [@monkey_pod_target, vendored_dep_target]
 
             @consumer = @pod_target.spec_consumers.first
