@@ -78,7 +78,7 @@ module Pod
                                                                              app_target_label)
             app_host_target.build_configurations.each do |configuration|
               configuration.build_settings['PRODUCT_NAME'] = app_target_label
-              configuration.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'org.cocoapods.${PRODUCT_NAME:rfc1034identifier}'
+              configuration.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'o.c.${PRODUCT_NAME:rfc1034identifier}'
               configuration.build_settings['CODE_SIGN_IDENTITY'] = '' if platform == :osx
               configuration.build_settings['CURRENT_PROJECT_VERSION'] = '1'
             end
