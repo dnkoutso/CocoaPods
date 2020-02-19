@@ -238,7 +238,7 @@ module Pod
       !xcframeworks_by_config.each_value.all?(&:empty?)
     end
 
-    # @return [Hash{String => Array<FrameworkPaths>}] The vendored dynamic artifacts and framework target
+    # @return [Hash{String => Array<FrameworkPaths>}] The relative vendored dynamic artifacts and framework target
     #         input and output paths grouped by config
     #
     def framework_paths_by_config
@@ -248,7 +248,11 @@ module Pod
           relevant_pod_targets = pod_targets_for_build_configuration(config)
           framework_paths_by_config[config] = relevant_pod_targets.flat_map do |pod_target|
             library_specs = pod_target.library_specs.map(&:name)
-            pod_target.framework_paths.values_at(*library_specs).flatten.compact.uniq
+            paths = pod_target.framework_paths.values_at(*library_specs).flatten.map(&:relative_framework_path_from_sandbox)
+            if pod_target.should_build? && pod_target.build_as_dynamic_framework?
+              paths << pod_target.build_product_path('${BUILT_PRODUCTS_DIR}')
+            end
+            paths.compact.uniq
           end
         end
         framework_paths_by_config

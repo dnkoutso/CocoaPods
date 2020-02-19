@@ -1,53 +1,65 @@
 module Pod
   module Xcode
+    # A class that makes it easy to deal with frameworks, paths and files associated with them.
+    #
     class FrameworkPaths
-      # @return [String] the path to the .framework
+      # @return [Sandbox] The sandbox of the current project
       #
-      attr_reader :source_path
+      attr_reader :sandbox
 
-      # @return [String, Nil] the dSYM path, if one exists
+      # @return [String, Pathname] the path to the .framework
       #
-      attr_reader :dsym_path
+      attr_reader :framework_path
 
-      # @return [Array, Nil] the bcsymbolmap files path array, if one exists
-      #
-      attr_reader :bcsymbolmap_paths
-
-      def initialize(source_path, dsym_path = nil, bcsymbolmap_paths = nil)
-        @source_path = source_path
-        @dsym_path = dsym_path
-        @bcsymbolmap_paths = bcsymbolmap_paths
+      def initialize(sandbox, framework_path)
+        @sandbox = sandbox
+        @framework_path = Pathname.new(framework_path).tap do |p|
+          raise 'Absolute path is required' unless p.absolute?
+        end
       end
 
       def ==(other)
-        if other.class == self.class
-          other.source_path == @source_path && other.dsym_path == @dsym_path && other.bcsymbolmap_paths == @bcsymbolmap_paths
-        else
-          false
-        end
+        return false if other.class != self.class
+        other.framework_path == framework_path && other.dsym_path == dsym_path && other.bcsymbolmap_paths == bcsymbolmap_paths
       end
 
       alias eql? ==
 
       def hash
-        [source_path, dsym_path, bcsymbolmap_paths].hash
+        [framework_path, dsym_path, bcsymbolmap_paths].hash
       end
 
       def all_paths
-        [source_path, dsym_path, bcsymbolmap_paths].flatten.compact
+        [framework_path, dsym_path, bcsymbolmap_paths].flatten.compact
       end
 
-      # @param [Pathname] path the path to the `.framework` bundle
-      #
-      # @return [FrameworkPaths] the path of the framework with dsym & bcsymbolmap paths, if found
-      #
-      def self.from_path(path)
-        dsym_name = "#{path.basename}.dSYM"
-        dsym_path = Pathname.new("#{path.dirname}/#{dsym_name}")
-        dsym_path = nil unless dsym_path.exist?
-        bcsymbolmap_paths = Pathname.glob(path.dirname, '*.bcsymbolmap')
+      def all_relative_paths
+        [relative_bcsymbolmap_paths_from_sandbox, relative_dsym_path_from_sandbox, relative_bcsymbolmap_paths_from_sandbox].flatten.compact
+      end
 
-        FrameworkPaths.new(path, dsym_path, bcsymbolmap_paths)
+      def dsym_path
+        # Until this can be configured, assume the dSYM file uses the file name as the framework.
+        # See https://github.com/CocoaPods/CocoaPods/issues/1698
+        @dsym_path ||= begin
+                         dsym_name = "#{framework_path.basename}.dSYM"
+                         Pathname.new("#{framework_path.dirname}/#{dsym_name}")
+                       end
+      end
+
+      def bcsymbolmap_paths
+        @bcsymbolmap_paths ||= Pathname.glob(framework_path.dirname + '*.bcsymbolmap')
+      end
+
+      def relative_framework_path_from_sandbox
+        "${PODS_ROOT}/#{framework_path.relative_path_from(sandbox.root)}"
+      end
+
+      def relative_dsym_path_from_sandbox
+        "#{relative_framework_path_from_sandbox}.dSYM"
+      end
+
+      def relative_bcsymbolmap_paths_from_sandbox
+        bcsymbolmap_paths.map { |bcsymbolmap_path| "${PODS_ROOT}/#{bcsymbolmap_path.relative_path_from(sandbox.root)}" }
       end
     end
   end

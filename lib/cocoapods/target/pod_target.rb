@@ -379,38 +379,15 @@ module Pod
       !app_specs.empty?
     end
 
-    # @return [Hash{String=>Array<Xcode::FrameworkPaths>}] The vendored and non vendored framework paths this target
-    #         depends upon keyed by spec name. For the root spec and subspecs the framework path of the target itself
-    #         is included.
+    # @return [Hash{String=>Array<Xcode::FrameworkPaths>}] The vendored framework paths this target depends upon keyed
+    #         by spec name.
     #
     def framework_paths
       @framework_paths ||= begin
         file_accessors.each_with_object({}) do |file_accessor, hash|
-          frameworks = file_accessor.vendored_dynamic_artifacts.map do |framework_path|
-            relative_path_to_sandbox = framework_path.relative_path_from(sandbox.root)
-            framework_source = "${PODS_ROOT}/#{relative_path_to_sandbox}"
-            # Until this can be configured, assume the dSYM file uses the file name as the framework.
-            # See https://github.com/CocoaPods/CocoaPods/issues/1698
-            dsym_name = "#{framework_path.basename}.dSYM"
-            dsym_path = Pathname.new("#{framework_path.dirname}/#{dsym_name}")
-            dsym_source = if dsym_path.exist?
-                            "${PODS_ROOT}/#{relative_path_to_sandbox}.dSYM"
-                          end
-            dirname = framework_path.dirname
-            bcsymbolmap_paths = if dirname.exist?
-                                  Dir.chdir(dirname) do
-                                    Dir.glob('*.bcsymbolmap').map do |bcsymbolmap_file_name|
-                                      bcsymbolmap_path = dirname + bcsymbolmap_file_name
-                                      "${PODS_ROOT}/#{bcsymbolmap_path.relative_path_from(sandbox.root)}"
-                                    end
-                                  end
-                                end
-            Xcode::FrameworkPaths.new(framework_source, dsym_source, bcsymbolmap_paths)
+          hash[file_accessor.spec.name] = file_accessor.vendored_dynamic_artifacts.map do |framework_path|
+            Xcode::FrameworkPaths.new(sandbox, framework_path)
           end
-          if file_accessor.spec.library_specification? && should_build? && build_as_dynamic_framework?
-            frameworks << Xcode::FrameworkPaths.new(build_product_path('${BUILT_PRODUCTS_DIR}'))
-          end
-          hash[file_accessor.spec.name] = frameworks
         end
       end
     end
@@ -431,7 +408,8 @@ module Pod
 
     # @return [Hash{String=>Array<String>}] The resource and resource bundle paths this target depends upon keyed by
     #         spec name. Resources for app specs and test specs are directly added to “Copy Bundle Resources” phase
-    #         from the generated targets for frameworks, but not libraries. Therefore they are not part of the resource paths.
+    #         from the generated targets for frameworks, but not libraries. Therefore they are not part of the resource
+    #         paths.
     #
     def resource_paths
       @resource_paths ||= begin

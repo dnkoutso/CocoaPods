@@ -40,7 +40,7 @@ module Pod
 
       it 'returns whether it has frameworks to embed' do
         @target.stubs(:framework_paths_by_config).returns(
-          'DEBUG' => [Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework')],
+          'DEBUG' => [Xcode::FrameworkPaths.new(config.sandbox, fixture('banana-lib/BananaFramework.framework'))],
         )
         @target.includes_frameworks?.should.be.true
         @target.stubs(:framework_paths_by_config).returns('DEBUG' => [], 'RELEASE' => [])
@@ -164,10 +164,10 @@ module Pod
           @pod_target.stubs(:should_build?).returns(true)
           @pod_target.stubs(:build_type).returns(BuildType.dynamic_framework)
           @target.framework_paths_by_config['Debug'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
           ]
           @target.framework_paths_by_config['Release'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
           ]
         end
 
@@ -201,25 +201,24 @@ module Pod
           @target.stubs(:pod_targets).returns([@pod_target, @pod_target_release])
           framework_paths_by_config = @target.framework_paths_by_config
           framework_paths_by_config['Debug'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
           ]
           framework_paths_by_config['Release'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/CoconutLib/CoconutLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
+            '${BUILT_PRODUCTS_DIR}/CoconutLib/CoconutLib.framework',
           ]
         end
 
         it 'returns vendored frameworks by config' do
+          banana_framework_path = fixture('banana-lib/BananaFramework.framework')
           path_list = Sandbox::PathList.new(fixture('banana-lib'))
           file_accessor = Sandbox::FileAccessor.new(path_list, @spec.consumer(:ios))
           @pod_target.stubs(:file_accessors).returns([file_accessor])
-          framework_path = Pathname('/some/absolute/path/to/FrameworkA.framework')
           @pod_target.file_accessors.first.stubs(:vendored_dynamic_artifacts).returns(
-            [framework_path],
+            [banana_framework_path],
           )
-          framework_path.stubs(:relative_path_from).returns(Pathname.new('../../some/absolute/path/to/FrameworkA.framework'))
           @target.framework_paths_by_config['Debug'].should == [
-            Xcode::FrameworkPaths.new('${PODS_ROOT}/../../some/absolute/path/to/FrameworkA.framework'),
+            '${PODS_ROOT}/../../spec/fixtures/banana-lib/BananaFramework.framework',
           ]
         end
 
@@ -227,10 +226,10 @@ module Pod
           @pod_target.stubs(:should_build?).returns(true)
           @pod_target.stubs(:build_type => BuildType.dynamic_framework)
           @target.framework_paths_by_config['Debug'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
           ]
           @target.framework_paths_by_config['Release'].should == [
-            Xcode::FrameworkPaths.new('${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework'),
+            '${BUILT_PRODUCTS_DIR}/BananaLib/BananaLib.framework',
           ]
         end
 
