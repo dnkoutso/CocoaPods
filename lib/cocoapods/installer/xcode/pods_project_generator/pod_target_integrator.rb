@@ -140,7 +140,7 @@ module Pod
               input_paths_key = UserProjectIntegrator::TargetIntegrator::XCFileListConfigKey.new(input_file_list_path, input_file_list_relative_path)
               input_paths = input_paths_by_config[input_paths_key] = [script_path]
               framework_paths.each do |path|
-                input_paths.concat(path.all_paths)
+                input_paths.concat(path.all_relative_paths)
               end
 
               output_file_list_path = target.embed_frameworks_script_output_files_path_for_spec(spec)

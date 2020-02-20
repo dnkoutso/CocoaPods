@@ -1,21 +1,14 @@
 module Pod
   module Xcode
-    # A class that makes it easy to deal with vendored framework paths and files associated with them.
+    # A class that makes it easy to deal with frameworks, paths and files associated with them.
     #
-    class VendoredFrameworkPaths
-      # @return [Sandbox] The sandbox of the current project
+    class TargetFrameworkPaths
+      # @return [PodTarget]
       #
-      attr_reader :sandbox
+      attr_reader :target
 
-      # @return [String, Pathname] the path to the .framework
-      #
-      attr_reader :framework_path
-
-      def initialize(sandbox, framework_path)
-        @sandbox = sandbox
-        @framework_path = Pathname.new(framework_path).tap do |p|
-          raise 'Absolute path is required' unless p.absolute?
-        end
+      def initialize(target)
+        @target = target
       end
 
       def ==(other)
@@ -51,7 +44,7 @@ module Pod
       end
 
       def relative_framework_path_from_sandbox
-        "${PODS_ROOT}/#{framework_path.relative_path_from(sandbox.root)}"
+        target.build_product_path('${BUILT_PRODUCTS_DIR}')
       end
 
       def relative_dsym_path_from_sandbox

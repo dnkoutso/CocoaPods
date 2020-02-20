@@ -33,7 +33,8 @@ module Pod
             end
 
             describe '#integrate!' do
-              it 'integrates test native targets with framework script phase' do
+              # it 'integrates test native targets with framework script phase' do
+              it 'shit' do
                 PodTargetIntegrator.new(@coconut_target_installation_result).integrate!
                 @test_native_target.build_phases.count.should == 1
                 @test_native_target.build_phases.map(&:display_name).should == [

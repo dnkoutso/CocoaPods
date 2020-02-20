@@ -386,7 +386,7 @@ module Pod
       @framework_paths ||= begin
         file_accessors.each_with_object({}) do |file_accessor, hash|
           hash[file_accessor.spec.name] = file_accessor.vendored_dynamic_artifacts.map do |framework_path|
-            Xcode::FrameworkPaths.new(sandbox, framework_path)
+            Xcode::VendoredFrameworkPaths.new(sandbox, framework_path)
           end
         end
       end
