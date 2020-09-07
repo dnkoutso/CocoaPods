@@ -10,6 +10,7 @@ module Pod
       #
       class TargetIntegrator
         autoload :XCConfigIntegrator, 'cocoapods/installer/user_project_integrator/target_integrator/xcconfig_integrator'
+        autoload :XCAssetsIntegrator, 'cocoapods/installer/user_project_integrator/target_integrator/xcassets_integrator'
 
         # @return [String] the string to use as prefix for every build phase added to the user project
         #
@@ -379,9 +380,8 @@ module Pod
             resource_input_paths.map do |resource_input_path|
               base_path = '${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}'
               extname = File.extname(resource_input_path)
-              basename = extname == '.xcassets' ? 'Assets' : File.basename(resource_input_path)
               output_extension = Target.output_extension_for_resource(extname)
-              File.join(base_path, File.basename(basename, extname) + output_extension)
+              File.join(base_path, File.basename(File.basename(resource_input_path), extname) + output_extension)
             end.uniq
           end
 
@@ -437,10 +437,12 @@ module Pod
         def integrate!
           UI.section(integration_message) do
             XCConfigIntegrator.integrate(target, native_targets)
+            XCAssetsIntegrator.integrate(target, native_targets)
 
             remove_obsolete_script_phases
             add_pods_library
             add_embed_frameworks_script_phase
+            add_xcassets
             remove_embed_frameworks_script_phase_from_embedded_targets
             add_copy_resources_script_phase
             add_check_manifest_lock_script_phase
@@ -509,19 +511,26 @@ module Pod
           output_paths_by_config = {}
           if use_input_output_paths
             target.resource_paths_by_config.each do |config, resource_paths|
+              filtered_resource_paths = resource_paths.reject { |r| r.end_with?('.xcassets') }
               input_paths_key = XCFileListConfigKey.new(target.copy_resources_script_input_files_path(config), target.copy_resources_script_input_files_relative_path)
-              input_paths_by_config[input_paths_key] = [script_path] + resource_paths
+              input_paths_by_config[input_paths_key] = [script_path] + filtered_resource_paths
 
               output_paths_key = XCFileListConfigKey.new(target.copy_resources_script_output_files_path(config), target.copy_resources_script_output_files_relative_path)
-              output_paths_by_config[output_paths_key] = TargetIntegrator.resource_output_paths(resource_paths)
+              output_paths_by_config[output_paths_key] = TargetIntegrator.resource_output_paths(filtered_resource_paths)
             end
           end
 
           native_targets.each do |native_target|
             # Static library targets cannot include resources. Skip this phase from being added instead.
             next if native_target.symbol_type == :static_library
-            TargetIntegrator.create_or_update_copy_resources_script_phase_to_target(native_target, script_path, input_paths_by_config, output_paths_by_config)
+            TargetIntegrator.create_or_update_copy_resources_script_phase_to_target(native_target, script_path,
+                                                                                    input_paths_by_config,
+                                                                                    output_paths_by_config)
           end
+        end
+
+        def add_xcassets
+
         end
 
         # Removes the embed frameworks build phase from embedded targets

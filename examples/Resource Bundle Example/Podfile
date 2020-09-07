@@ -3,7 +3,7 @@ if (repo = ENV['COCOAPODS_SPEC_REPO'])
 end
 
 platform :ios, '8.0'
-use_frameworks!
+# use_frameworks!
 
 workspace 'Examples.xcworkspace'
 project 'Resource Bundle Example.xcodeproj'

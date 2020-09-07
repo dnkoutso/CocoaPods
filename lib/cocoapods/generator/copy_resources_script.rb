@@ -13,7 +13,7 @@ module Pod
 
       # Initialize a new instance
       #
-      # @param  [Hash<String, Array<String>>] resources_by_config
+      # @param  [Hash{String => Array<String>}] resources_by_config
       #         @see resources_by_config
       #
       # @param  [Platform] platform
@@ -95,9 +95,16 @@ module Pod
         end
 
         script += RSYNC_CALL
-        script += XCASSETS_COMPILE
+        # script += XCASSETS_COMPILE # TODO: backwards compatibility conditional?
         script
       end
+
+      XCASSETS_CASE = <<EOS.strip
+*.xcassets)
+      ABSOLUTE_XCASSET_FILE="$RESOURCE_PATH"
+      XCASSET_FILES+=("$ABSOLUTE_XCASSET_FILE")
+      ;;
+EOS
 
       INSTALL_RESOURCES_FUNCTION = <<EOS
 #{Pod::Generator::ScriptPhaseConstants::DEFAULT_SCRIPT_PHASE_HEADER}
@@ -176,10 +183,7 @@ EOM
       echo "xcrun mapc \\"$RESOURCE_PATH\\" \\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/`basename "$RESOURCE_PATH" .xcmappingmodel`.cdm\\"" || true
       xcrun mapc "$RESOURCE_PATH" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/`basename "$RESOURCE_PATH" .xcmappingmodel`.cdm"
       ;;
-    *.xcassets)
-      ABSOLUTE_XCASSET_FILE="$RESOURCE_PATH"
-      XCASSET_FILES+=("$ABSOLUTE_XCASSET_FILE")
-      ;;
+    # TODO
     *)
       echo "$RESOURCE_PATH" || true
       echo "$RESOURCE_PATH" >> "$RESOURCES_TO_COPY"

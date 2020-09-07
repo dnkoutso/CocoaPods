@@ -290,7 +290,7 @@ module Pod
               built_product_dir = Pathname.new(pod_target.build_product_path('${BUILT_PRODUCTS_DIR}'))
               resource_paths = resource_paths.map do |resource_path|
                 extname = File.extname(resource_path)
-                if self.class.resource_extension_compilable?(extname)
+                if Target.resource_extension_compilable?(extname)
                   output_extname = self.class.output_extension_for_resource(extname)
                   built_product_dir.join(File.basename(resource_path, extname)).sub_ext(output_extname).to_s
                 else
