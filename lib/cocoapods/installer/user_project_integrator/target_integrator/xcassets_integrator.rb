@@ -41,7 +41,7 @@ module Pod
 
             # support user custom paths of Pods group and xcconfigs files.
             group_path = Pathname.new(group.real_path)
-            path = Pathname.new(xcassets_path).relative_path_from(group_path)
+            path = xcassets_path.relative_path_from(group_path)
 
             filename = path.basename.to_s
             file_ref = group.files.find { |f| f.display_name == filename }

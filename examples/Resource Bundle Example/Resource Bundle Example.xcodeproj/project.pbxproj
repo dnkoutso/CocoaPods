@@ -16,6 +16,7 @@
 		A8C77C621C9DA931000AFF69 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A8C77C601C9DA931000AFF69 /* LaunchScreen.storyboard */; };
 		B70BCD082506A36300353B6E /* dummy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70BCD072506A36300353B6E /* dummy.swift */; };
 		B70BCD0A2506A55000353B6E /* AppAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B70BCD092506A55000353B6E /* AppAssets.xcassets */; };
+		B70BCD0C2506B3CD00353B6E /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B70BCD0B2506B3CD00353B6E /* Images.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		A8C77C631C9DA931000AFF69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B70BCD072506A36300353B6E /* dummy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dummy.swift; sourceTree = "<group>"; };
 		B70BCD092506A55000353B6E /* AppAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AppAssets.xcassets; sourceTree = "<group>"; };
+		B70BCD0B2506B3CD00353B6E /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = "Example Pods/Images.xcassets"; sourceTree = SOURCE_ROOT; };
 		FB8DF5F89FA0B0BDC30AAAFD /* Pods-Resource Bundle Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Resource Bundle Example.release.xcconfig"; path = "Target Support Files/Pods-Resource Bundle Example/Pods-Resource Bundle Example.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -53,6 +55,7 @@
 			children = (
 				10B8F5D36339B23370337CC5 /* Pods-Resource Bundle Example.debug.xcconfig */,
 				FB8DF5F89FA0B0BDC30AAAFD /* Pods-Resource Bundle Example.release.xcconfig */,
+				B70BCD0B2506B3CD00353B6E /* Images.xcassets */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -171,6 +174,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A8C77C621C9DA931000AFF69 /* LaunchScreen.storyboard in Resources */,
+				B70BCD0C2506B3CD00353B6E /* Images.xcassets in Resources */,
 				A8C77C5F1C9DA931000AFF69 /* Assets.xcassets in Resources */,
 				B70BCD0A2506A55000353B6E /* AppAssets.xcassets in Resources */,
 				A8C77C5D1C9DA931000AFF69 /* Main.storyboard in Resources */,

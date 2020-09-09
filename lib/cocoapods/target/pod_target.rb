@@ -429,8 +429,8 @@ module Pod
       end
     end
 
-    # @return [Hash{String=>Array<String>}] The resource and resource bundle paths this target depends upon keyed by
-    #         spec name. Resource (not resource bundles) paths can vary depending on the type of spec:
+    # @return [Hash{String=>Array<String>}] The mapped resource and resource bundle paths this target depends upon keyed
+    #         by spec name. Resource (not resource bundles) paths can vary depending on the type of spec:
     #           - App specs _always_ get their resource paths added to "Copy Bundle Resources" phase from
     #             [PodTargetInstaller] therefore their resource paths are never included here.
     #           - Test specs may have their resource paths added to "Copy Bundle Resources" if the target itself is
