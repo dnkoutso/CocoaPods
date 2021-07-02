@@ -93,8 +93,7 @@ module Pod
       #                  The name or the URL of the source.
       #
       def source_with_name_or_url(name_or_url)
-        all.find { |s| s.name == name_or_url } ||
-          find_or_create_source_with_url(name_or_url)
+        all.find { |s| s.name == name_or_url } || find_or_create_source_with_url(name_or_url)
       end
 
       # @return [Pathname] The path where the search index should be stored.
@@ -141,14 +140,6 @@ module Pod
         # Perform search index update operation in background.
         update_search_index_if_needed_in_background(changed_spec_paths)
       end
-
-      # Adds the provided source to the list of sources
-      #
-      # @param [Source] source the source to add
-      #
-      def add_source(source)
-        all << source unless all.any? { |s| s.url == source || s.name == source.name }
-      end
     end
 
     extend Executable
@@ -166,20 +157,20 @@ module Pod
         first.strip
     end
 
-    def update_git_repo(show_output = false)
-      Config.instance.with_changes(:verbose => show_output) do
-        args = %W(-C #{repo} fetch origin)
-        args.push('--progress') if show_output
-        git!(args)
-        current_branch = git!(%W(-C #{repo} rev-parse --abbrev-ref HEAD)).strip
-        git!(%W(-C #{repo} reset --hard origin/#{current_branch}))
-      end
-    rescue
-      raise Informative, 'CocoaPods was not able to update the ' \
-        "`#{name}` repo. If this is an unexpected issue " \
-        'and persists you can inspect it running ' \
-        '`pod repo update --verbose`'
-    end
+    # def update_git_repo(show_output = false)
+    #   Config.instance.with_changes(:verbose => show_output) do
+    #     args = %W(-C #{repo} fetch origin)
+    #     args.push('--progress') if show_output
+    #     git!(args)
+    #     current_branch = git!(%W(-C #{repo} rev-parse --abbrev-ref HEAD)).strip
+    #     git!(%W(-C #{repo} reset --hard origin/#{current_branch}))
+    #   end
+    # rescue
+    #   raise Informative, 'CocoaPods was not able to update the ' \
+    #     "`#{name}` repo. If this is an unexpected issue " \
+    #     'and persists you can inspect it running ' \
+    #     '`pod repo update --verbose`'
+    # end
   end
 
   class TrunkSource

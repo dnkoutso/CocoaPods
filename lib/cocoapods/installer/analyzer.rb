@@ -35,11 +35,11 @@ module Pod
       #
       attr_reader :podfile
 
-      # @return [Lockfile] The Lockfile, if available, that stores the information about the Pods previously installed.
+      # @return [Lockfile, nil] The Lockfile, if available, that stores the information about the Pods previously installed.
       #
       attr_reader :lockfile
 
-      # @return [Array<Source>] Sources provided by plugins or `nil`.
+      # @return [Array<Source>, nil] Sources provided by plugins or `nil`.
       #
       attr_reader :plugin_sources
 
@@ -67,8 +67,8 @@ module Pod
       #
       # @param  [Sandbox] sandbox @see #sandbox
       # @param  [Podfile] podfile @see #podfile
-      # @param  [Lockfile] lockfile @see #lockfile
-      # @param  [Array<Source>] plugin_sources @see #plugin_sources
+      # @param  [Lockfile, nil] lockfile @see #lockfile
+      # @param  [Array<Source>, nil] plugin_sources @see #plugin_sources
       # @param  [Boolean] has_dependencies @see #has_dependencies
       # @param  [Hash, Boolean, nil] pods_to_update @see #pods_to_update
       # @param  [Source::Manager] sources_manager @see #sources_manager
@@ -144,7 +144,7 @@ module Pod
           if source.updateable?
             sources_manager.update(source.name, true)
           else
-            UI.message "Skipping `#{source.name}` update because the repository is not an updateable repository."
+            UI.message "Skipping `#{source.name}` update because the repository is not an updatable repository."
           end
         end
         @specs_updated = true
@@ -174,8 +174,14 @@ module Pod
             sources += dependency_sources
           end
 
-          result = sources.uniq.map do |source_url|
+          local_sources, remote_sources = sources.partition { |s| s.start_with?('file://') }
+          result = remote_sources.uniq.map do |source_url|
             sources_manager.find_or_create_source_with_url(source_url)
+          end
+          local_sources.each do |local_source|
+            s = LocalSource.new(local_source.delete_prefix('file://'))
+            result << s
+            sources_manager.add_source(s)
           end
           unless plugin_sources.empty?
             result.insert(0, *plugin_sources)
@@ -1072,6 +1078,13 @@ module Pod
           resolver = Pod::Resolver.new(sandbox, podfile, locked_dependencies, sources, @specs_updated, :sources_manager => sources_manager)
           resolver_specs_by_target = resolver.resolve
           resolver_specs_by_target.values.flatten(1).map(&:spec).each(&:validate_cocoapods_version)
+        end
+
+        # TODO probably add a new method
+        resolver_specs_by_target.values.flatten(1).each do |resolver_spec|
+          next unless resolver_spec.source.local?
+          puts "HIIII ==== #{resolver_spec.spec.inspect}"
+          sandbox.store_local_path(resolver_spec.spec.name, resolver_spec.spec.defined_in_file, true)
         end
         resolver_specs_by_target
       end
